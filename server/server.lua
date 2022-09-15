@@ -549,15 +549,15 @@ while true do
           local path = shell.getWorkingDirectory()
           fs.remove(path .. "/modules")
           os.execute("mkdir modules")
-          for _,value in pairs(data) do
-            os.execute("mkdir modules/" .. value.folder)
+          for j=1,#data,1 do
+            os.execute("mkdir modules/" .. data[j].folder)
             if data.debug then
-              os.execute ("wget -f " .. value.debug .. " modules/" .. value.folder .. "/Main.lua")
+              os.execute ("wget -f " .. data[j].debug .. " modules/" .. data[j].folder .. "/Main.lua")
             else
-              os.execute ("wget -f " .. value.main .. " modules/" .. value.folder .. "/Main.lua")
+              os.execute ("wget -f " .. data[j].main .. " modules/" .. data[j].folder .. "/Main.lua")
             end
-            for i=1,#value.extras,1 do
-              os.execute("wget -f " .. value.extras[i].url .. " modules/" .. value.folder .. "/" .. value.extras[i].name)
+            for i=1,#data[j].extras,1 do
+              os.execute("wget -f " .. data[j].extras[i].url .. " modules/" .. data[j].folder .. "/" .. data[j].extras[i].name)
             end
           end
           print("Finished downloading modules. Restart server")

@@ -337,10 +337,10 @@ local function devMod(...)
       moduleInstallButton.disabled = true
 
       local moduleTable
-      local displayList, downloadList, bothArray, cancelButton, downloadButton
+      local displayList, downloadList, bothArray, cancelButton, downloadButton,moveRight,moveLeft
       --local listUp, listDown, listNum, listUp2, listDown2, listNum2
 
-      local pageMult = 10
+      local pageMult = 9
       local listPageNumber = 0
       local previousPage = 0
 
@@ -353,7 +353,7 @@ local function devMod(...)
         displayList:removeChildren()
         downloadList:removeChildren()
         local text
-        for i=1,#pageMult * listPageNumber + 1,1 do
+        for i=pageMult * listPageNumber + 1,pageMult * listPageNumber + pageMult,1 do
           if bothArray[1][i] ~= nil then
             text = " "
             if #bothArray[1][i].requirements ~= 0 then
@@ -365,78 +365,41 @@ local function devMod(...)
             if bothArray[1][i].server ~= nil then
               text = text .. "@"
             end
-            displayList:addItem(bothArray[1][i].name .. text).onTouch = function() --This area manages the moving of data between lists for downloading or removal/no download. More complex due to checking requirements (required files being downloaded as well or removing files that require the file being removed.)
-              table.insert(bothArray[2],bothArray[1][i])
-              local removeId = bothArray[1][i].requirements
-              table.remove(bothArray[1],i)
-              local function removeRequirements(removeId)
-                for _,value in pairs(removeId) do
-                  for j=1,#bothArray[1][j],1 do
-                    if bothArray[1][j].id == value then
-                      local be = bothArray[1][j].requirements
-                      table.insert(bothArray[2],bothArray[1][j])
-                      table.remove(bothArray[1],j)
-                      removeRequirements(be)
-                    end
-                  end
-                end
-              end
-              removeRequirements(removeId)
-            end
-            updateLists()
+            displayList:addItem(bothArray[1][i].name .. text)
           end
-          for i=1,#pageMult * listPageNumber2 + 1,1 do
-            if bothArray[2][i] ~= nil then
-              text = " "
-              if #bothArray[2][i].requirements ~= 0 then
-                text = text .. "#"
-              end
-              if bothArray[2][i].database ~= nil then
-                text = text .. "%"
-              end
-              if bothArray[2][i].server ~= nil then
-                text = text .. "@"
-              end
-              downloadList:addItem(bothArray[2][i].name .. text).onTouch = function()
-                table.insert(bothArray[1],bothArray[2][i])
-                local backup = bothArray[2][i].id
-                table.remove(bothArray[2],i)
-                local idList = {}
-                local function removeRequirements(removeId)
-                  for j=1,#bothArray[2],1 do
-                    for _,value in pairs(bothArray[2][j].requirements) do
-                      if value == removeId then
-                        table.insert(idList,bothArray[2][j].id)
-                        removeRequirements(bothArray[2][j].id)
-                      end
-                    end
-                  end
-                end
-                removeRequirements(backup)
-                for _,value in pairs(idList) do
-                  for j=1,#bothArray[2],1 do
-                    if bothArray[2][j].id == value then
-                      table.insert(bothArray[1],bothArray[2][j])
-                      table.remove(bothArray[2],j)
-                    end
-                  end
-                end --TODO: DOuble check this is all good.
-                updateLists()
-              end
-              --Continue list update stuff
-              --TODO: When adding page change, make sure if less are visible on a list, that it moves back a page
-              if previousPage == listPageNumber then
-                displayList.selectedItem = leftSelect
-              else
-                previousPage = listPageNumber
-              end
-              if previousPage2 == listPageNumber2 then
-                downloadList.selectedItem = rightSelect
-              else
-                previousPage2 = listPageNumber2
-              end
+        end
+        if bothArray[1][1] == nil then
+          moveRight.disabled = true
+        end
+        for i=pageMult * listPageNumber2 + 1,pageMult * listPageNumber2 + pageMult,1 do
+          if bothArray[2][i] ~= nil then
+            text = " "
+            if #bothArray[2][i].requirements ~= 0 then
+              text = text .. "#"
             end
+            if bothArray[2][i].database ~= nil then
+              text = text .. "%"
+            end
+            if bothArray[2][i].server ~= nil then
+              text = text .. "@"
+            end
+            downloadList:addItem(bothArray[2][i].name .. text)
           end
+        end
+        if bothArray[2][1] == nil then
+          moveLeft.disabled = true
+        end
+        --Continue list update stuff
+        --TODO: When adding page change, make sure if less are visible on a list, that it moves back a page
+        if previousPage == listPageNumber then
+          displayList.selectedItem = leftSelect
+        else
+          previousPage = listPageNumber
+        end
+        if previousPage2 == listPageNumber2 then
+          downloadList.selectedItem = rightSelect
+        else
+          previousPage2 = listPageNumber2
         end
       end
 
@@ -476,15 +439,61 @@ local function devMod(...)
         moduleTable = loadTable(aRD .. "temporary.txt")
         fs.remove(aRD .. "temporary.txt")
         bothArray = {}
-        bothArray[1],bothArray[2] = {}
+        bothArray[1],bothArray[2] = {}, {}
         for i=1,#moduleTable,1 do
           table.insert(bothArray[1],moduleTable[i])
         end
         layout:addChild(GUI.label(2,2,1,1,style.listPageLabel,"Available"))
         layout:addChild(GUI.label(41,2,1,1,style.listPageLabel,"Downloading"))
         layout:addChild(GUI.label(2,1,1,1,style.listPageLabel,"# = has requirements / % = database files; @ = server files"))
-        displayList = layout:addChild(GUI.list(2, 3, 35, 30, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
-        downloadList = layout:addChild(GUI.list(41, 3, 35, 30, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
+        displayList = layout:addChild(GUI.list(2, 3, 35, 27, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
+        downloadList = layout:addChild(GUI.list(41, 3, 35, 27, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
+        moveRight = layout:addChild(GUI.button(15,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Cancel"))
+        moveRight.onTouch = function() --This area manages the moving of data between lists for downloading or removal/no download. More complex due to checking requirements (required files being downloaded as well or removing files that require the file being removed.)
+          table.insert(bothArray[2],bothArray[1][i])
+          local removeId = bothArray[1][i].requirements --error
+          table.remove(bothArray[1],i)
+          local function removeRequirements(removeId)
+            for _,value in pairs(removeId) do
+              for j=1,#bothArray[1][j],1 do
+                if bothArray[1][j].id == value then
+                  local be = bothArray[1][j].requirements
+                  table.insert(bothArray[2],bothArray[1][j])
+                  table.remove(bothArray[1],j)
+                  removeRequirements(be)
+                end
+              end
+            end
+          end
+          removeRequirements(removeId)
+        end
+        moveLeft = layout:addChild(GUI.button(56,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Cancel"))
+        moveLeft.onTouch = function()
+          table.insert(bothArray[1],bothArray[2][i])
+          local backup = bothArray[2][i].id
+          table.remove(bothArray[2],i)
+          local idList = {}
+          local function removeRequirements(removeId)
+            for j=1,#bothArray[2],1 do
+              for _,value in pairs(bothArray[2][j].requirements) do
+                if value == removeId then
+                  table.insert(idList,bothArray[2][j].id)
+                  removeRequirements(bothArray[2][j].id)
+                end
+              end
+            end
+          end
+          removeRequirements(backup)
+          for _,value in pairs(idList) do
+            for j=1,#bothArray[2],1 do
+              if bothArray[2][j].id == value then
+                table.insert(bothArray[1],bothArray[2][j])
+                table.remove(bothArray[2],j)
+              end
+            end
+          end --TODO: DOuble check this is all good.
+          updateLists()
+        end
         cancelButton = layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Cancel"))
         cancelButton.onTouch = function()
           layout:removeChildren()
@@ -618,7 +627,7 @@ if settingTable == nil then
   end
   modem.close(syncPort)
   saveTable(settingTable,aRD .. "dbsettings.txt")
-  os.exit()
+  return
 end
 if settingTable.style == nil then
   settingTable.style = "default.lua"
@@ -661,6 +670,7 @@ local function finishSetup()
   window:addChild(GUI.panel(1,11,12,window.height - 11,style.listPanel))
   modulesLayout = window:addChild(GUI.list(2,12,10,window.height - 13,3,0,style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
   local modulors = fs.list(modulesPath)
+  if modulors == nil then modulors = {} end
   modules = {}
   table.insert(modulors,1,"dev")
   for i = 1, #modulors do
