@@ -315,15 +315,17 @@ else
       userTable.passSettings = userTable.settings
       userTable.settings = nil
     end
-    for i=1,#userTable.passSettings.var,1 do
-      if userTable.passSettings.type[i] == "string" then
-        if userTable.passSettings.data[i] == false then
-          userTable.passSettings.data[i] = 1
-        end
-      elseif userTable.passSettings.type[i] == "-string" then
-        if userTable.passSettings.data[i] == false then
-          userTable.passSettings.type[i] = "string"
-          userTable.passSettings.data[i] = 2
+    if userTable.passSettings ~= nil then
+      for i=1,#userTable.passSettings.var,1 do
+        if userTable.passSettings.type[i] == "string" then
+          if userTable.passSettings.data[i] == false then
+            userTable.passSettings.data[i] = 1
+          end
+        elseif userTable.passSettings.type[i] == "-string" then
+          if userTable.passSettings.data[i] == false then
+            userTable.passSettings.type[i] = "string"
+            userTable.passSettings.data[i] = 2
+          end
         end
       end
     end
@@ -334,7 +336,7 @@ else
         table.remove(userTable,1)
       end
     end
-    if userTable.passSettings.sectors ~= nil then
+    if userTable.passSettings ~= nil and userTable.passSettings.sectors ~= nil then
       userTable.sectors = userTable.passSettings.sectors
       userTable.passSettings.sectors = nil
     end
