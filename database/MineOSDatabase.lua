@@ -37,7 +37,10 @@ local modem
 local tableRay = {}
 local prevmod
 
-local download = "urltomodulestxt"
+local download = "https://raw.githubusercontent.com/cadergator10/Opencomputers-serpentine/main/modules.txt"
+local debug = false
+local moduleDownloadDebug = false
+
 
 if component.isAvailable("os_cardwriter") then
   writer = component.os_cardwriter
@@ -345,8 +348,8 @@ local function devMod(...)
       local previousPage2 = 0
 
       local function updateLists()
-        local leftSelect = pageMult * listPageButton + displayList.selectedItem
-        local rightSelect = pageMult * listPageButton2 + downloadList.selectedItem
+        local leftSelect = pageMult * listPageNumber + displayList.selectedItem
+        local rightSelect = pageMult * listPageNumber2 + downloadList.selectedItem
         displayList:removeChildren()
         downloadList:removeChildren()
         local text
@@ -366,7 +369,7 @@ local function devMod(...)
               table.insert(bothArray[2],bothArray[1][i])
               local removeId = bothArray[1][i].requirements
               table.remove(bothArray[1],i)
-              local function removeRequirements = function(removeId)
+              local function removeRequirements(removeId)
                 for _,value in pairs(removeId) do
                   for j=1,#bothArray[1][j],1 do
                     if bothArray[1][j].id == value then
@@ -399,7 +402,7 @@ local function devMod(...)
                 local backup = bothArray[2][i].id
                 table.remove(bothArray[2],i)
                 local idList = {}
-                local function removeRequirements = function(removeId)
+                local function removeRequirements(removeId)
                   for j=1,#bothArray[2],1 do
                     for _,value in pairs(bothArray[2][j].requirements) do
                       if value == removeId then
@@ -508,18 +511,20 @@ local function devMod(...)
               table.insert(dbMods,value.database)
             end
           end
+          serverMods.debug = moduleDownloadDebug
           local e,_,_,_,_,good = callModem(modemPort,"moduleinstall",crypt(ser.serialize(serverMods),settingTable.cryptKey))
           if e and crypt(good,settingTable.cryptKey,true) == "true" then --TEST: Does this successfully install everything
             if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
             fs.makeDirectory(aRD .. "/Modules")
             for _,value in pairs(dbMods) do
               fs.makeDirectory(modulesPath .. value.folder)
-              internet.download(value.main,modulesPath .. value.folder .. "/Main.lua")
+              internet.download(moduleDownloadDebug and value.debug or value.main,modulesPath .. value.folder .. "/Main.lua")
               for i=1,#value.extras,1 do
                 internet.download(value.extras[i].url,modulesPath .. value.folder .. "/" .. value.extras[i].name)
               end
             end
             --After done with downloading
+            pog.active = false
             GUI.alert("Everything has been downloaded on the database. The server will need a reboot after it's done downloading all of the modules. Please restart server after it's done then restart database.")
             window:removeChildren()
             window:remove()
@@ -529,7 +534,7 @@ local function devMod(...)
             window:remove()
           end
         end
-        updateList()
+        updateLists()
       else
         GUI.alert(errored)
         disabledSet()
@@ -666,6 +671,7 @@ local function finishSetup()
         object.module = result
         object.isDefault = true
         object.onTouch = modulePress
+        result.debug = debug
         table.insert(modules,result)
       else
         error("Failed to execute module " .. modulors[i] .. ": " .. tostring(result))
@@ -679,6 +685,7 @@ local function finishSetup()
           object.module = result
           object.isDefault = false
           object.onTouch = modulePress
+          result.debug = debug
           table.insert(modules,result)
           for i=1,#result.table,1 do
             table.insert(tableRay,result.table[i])

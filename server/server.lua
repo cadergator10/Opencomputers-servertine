@@ -371,7 +371,7 @@ server = nil
 local function serversettings()
   local selected = 1
   local pr = revealPort and "hide port" or "reveal port"
-  local set = {"add modules","delete all modules",pr,"close menu"}
+  local set = {"delete all modules",pr,"close menu"}
   local fresh = function()
     local nextmsg = "Select one:"
     for i=1,#set,1 do
@@ -403,37 +403,13 @@ local function serversettings()
       end
     elseif char == "enter" then
       if selected == 1 then
-        dohistory = false
-        os.execute("wget -f " .. serverModules .. " temp.txt")
-        local mlist = loadTable("temp.txt")
-        local skip = true
-        while skip do
-          term.clear()
-          local counter = 0
-          for i=1,#mlist,1 do
-            advWrite(i .. ". " .. mlist[i].name,0xFFFFFF,true,true,i,true)
-            counter = counter + 1
-          end
-          advWrite("Enter the number of the module you want to install",0xFFFFFF,true,true,counter + 1,true)
-          advWrite("If you dont want to install any more modules, enter 0",0xFFFFFF,true,true,counter + 2,true)
-          local text = tonumber(term.read())
-          if text ~= 0 and text <= #mlist then
-            advWrite("Downloading " .. mlist[text].name .. ": as " .. mlist[text].filename,0xFFFFFF,true,true,#viewhistory + 5,true)
-            os.execute("wget -f " .. mlist[text].url .. " modules/" .. mlist[text].filename)
-          else
-            skip = false
-          end
-        end
-        print("finished")
-        os.execute("del temp.txt")
-      elseif selected == 2 then
         local path = shell.getWorkingDirectory()
         fs.remove(path .. "/modules")
         os.execute("mkdir modules")
         term.clear()
         print("Wiped modules. Restart server")
         os.exit()
-      elseif selected == 3 then
+      elseif selected == 2 then
         if revealPort == false then revealPort = true else revealPort = false end
         if revealPort then
           advWrite(#modules .. " modules loaded / port shown: " .. modemPort,nil,false,true,2,true)
@@ -446,7 +422,7 @@ local function serversettings()
         os.sleep(1)
         eventcheckpull = true
         thread.current():kill()
-      elseif selected == 4 then
+      elseif selected == 3 then
         advWrite("Press enter to bring up menu",0xFFFFFF,false,true,#viewhistory + 5,true)
         os.sleep(1)
         eventcheckpull = true
@@ -573,7 +549,11 @@ while true do
           os.execute("mkdir modules")
           for _,value in pairs(data) do
             os.execute("mkdir modules/" .. value.folder)
-            os.execute ("wget -f " .. value.main .. " modules/" .. value.folder .. "/Main.lua")
+            if data.debug then
+              os.execute ("wget -f " .. value.debug .. " modules/" .. value.folder .. "/Main.lua")
+            else
+              os.execute ("wget -f " .. value.main .. " modules/" .. value.folder .. "/Main.lua")
+            end
             for i=1,#value.extras,1 do
               os.execute("wget -f " .. value.extras[i].url .. " modules/" .. value.folder .. "/" .. value.extras[i].name)
             end
