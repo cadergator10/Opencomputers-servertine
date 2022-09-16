@@ -370,6 +370,8 @@ local function devMod(...)
         end
         if bothArray[1][1] == nil then
           moveRight.disabled = true
+        else
+          moveRight.disabled = false
         end
         for i=pageMult * listPageNumber2 + 1,pageMult * listPageNumber2 + pageMult,1 do
           if bothArray[2][i] ~= nil then
@@ -388,6 +390,8 @@ local function devMod(...)
         end
         if bothArray[2][1] == nil then
           moveLeft.disabled = true
+        else
+          moveLeft.disabled = false
         end
         --Continue list update stuff
         --TODO: When adding page change, make sure if less are visible on a list, that it moves back a page
@@ -401,6 +405,7 @@ local function devMod(...)
         else
           previousPage2 = listPageNumber2
         end
+        workspace:draw()
       end
 
       --[[local function pageCallback(workspace,button)
@@ -448,15 +453,15 @@ local function devMod(...)
         layout:addChild(GUI.label(2,1,1,1,style.listPageLabel,"# = has requirements / % = database files; @ = server files"))
         displayList = layout:addChild(GUI.list(2, 3, 35, 27, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
         downloadList = layout:addChild(GUI.list(41, 3, 35, 27, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
-        moveRight = layout:addChild(GUI.button(15,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Cancel"))
+        moveRight = layout:addChild(GUI.button(15,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Move Right"))
         moveRight.onTouch = function() --This area manages the moving of data between lists for downloading or removal/no download. More complex due to checking requirements (required files being downloaded as well or removing files that require the file being removed.)
           local i = pageMult * listPageNumber + displayList.selectedItem
           table.insert(bothArray[2],bothArray[1][i])
-          local removeId = bothArray[1][i].requirements --error
+          local removeId = bothArray[1][i].requirements
           table.remove(bothArray[1],i)
           local function removeRequirements(removeId)
             for _,value in pairs(removeId) do
-              for j=1,#bothArray[1][j],1 do
+              for j=1,#bothArray[1],1 do
                 if bothArray[1][j].id == value then
                   local be = bothArray[1][j].requirements
                   table.insert(bothArray[2],bothArray[1][j])
@@ -467,8 +472,9 @@ local function devMod(...)
             end
           end
           removeRequirements(removeId)
+          updateLists()
         end
-        moveLeft = layout:addChild(GUI.button(56,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Cancel"))
+        moveLeft = layout:addChild(GUI.button(56,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Move Left"))
         moveLeft.onTouch = function()
           local i = pageMult * listPageNumber2 + downloadList.selectedItem
           table.insert(bothArray[1],bothArray[2][i])
