@@ -156,7 +156,7 @@ end
     term.clear()
     fill = doorTable
     fill["type"] = doorTable.type or "custom"
-    send(nil,modemPort,true,"setDoor",crypt(ser.serialize(fill),extraConfig.cryptKey))
+    send(nil,modemPort,true,"setDevice",crypt(ser.serialize(fill),extraConfig.cryptKey))
     local got, _, _, _, _, fill = event.pull(2, "modem_message")
     if got then
       varSettings = ser.unserialize(crypt(fill,extraConfig.cryptKey,true))
