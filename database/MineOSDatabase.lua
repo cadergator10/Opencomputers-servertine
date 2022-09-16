@@ -450,6 +450,7 @@ local function devMod(...)
         downloadList = layout:addChild(GUI.list(41, 3, 35, 27, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
         moveRight = layout:addChild(GUI.button(15,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Cancel"))
         moveRight.onTouch = function() --This area manages the moving of data between lists for downloading or removal/no download. More complex due to checking requirements (required files being downloaded as well or removing files that require the file being removed.)
+          local i = pageMult * listPageNumber + displayList.selectedItem
           table.insert(bothArray[2],bothArray[1][i])
           local removeId = bothArray[1][i].requirements --error
           table.remove(bothArray[1],i)
@@ -469,6 +470,7 @@ local function devMod(...)
         end
         moveLeft = layout:addChild(GUI.button(56,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Cancel"))
         moveLeft.onTouch = function()
+          local i = pageMult * listPageNumber2 + downloadList.selectedItem
           table.insert(bothArray[1],bothArray[2][i])
           local backup = bothArray[2][i].id
           table.remove(bothArray[2],i)
