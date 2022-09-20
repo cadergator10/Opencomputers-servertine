@@ -230,17 +230,38 @@ _,viewport = term.getViewport()
 for i=1,viewport - 5,1 do
   viewhistory[i] = {"",0xFFFFFF}
 end
+
+local settingTable = loadTable("settings.txt")
+if settingTable == nil then
+  settingTable = {["cryptKey"]={1,2,3,4,5},["port"]=1000,["debug"]=false}
+  saveTable(settingTable,"settings.txt")
+end
+settingTable = loadTable("settings.txt")
+
+if settingTable.debug == nil then
+  settingTable.debug = false
+  saveTable(settingTable,"settings.txt")
+end
+if settingTable.port == nil then
+  settingTable.port = 1000
+  saveTable(settingTable,"settings.txt")
+end
+modemPort = settingTable.port
+debug = settingTable.debug
+
 modulepath = fs.path(shell.resolve(process.info().path)).. "/modules"
 if fs.exists(modulepath) == false then
   os.execute("mkdir modules")
 end
-
+local crashTable = {}
 for file in fs.list(modulepath .. "/") do --TEST: Does this successfully pull the Main.lua in folders.
   local result, reason = loadfile(modulepath .. "/" .. file .. "/Main.lua")
   if result then
     local success, result = pcall(result)
     if success then
       table.insert(modules,result)
+    else
+      table.insert(crashTable,"Error loading module in folder named " .. file .. ". Reason: " .. result)
     end
   end
 end
@@ -250,22 +271,6 @@ if logUsers == nil then
   logUsers = {}
   saveTable(logUsers,"users.txt")
 end
-local settingTable = loadTable("settings.txt")
-if settingTable == nil then
-  settingTable = {["cryptKey"]={1,2,3,4,5},["pass"]=false,["port"]=1000}
-  saveTable(settingTable,"settings.txt")
-end
-settingTable = loadTable("settings.txt")
-
-if settingTable.pass == nil then
-  settingTable.pass = false
-  saveTable(settingTable,"settings.txt")
-end
-if settingTable.port == nil then
-  settingTable.port = 1000
-  saveTable(settingTable,"settings.txt")
-end
-modemPort = settingTable.port
 
 term.clear()
 local doorTable = loadTable("devicelist.txt")
@@ -351,6 +356,15 @@ end,["copy"] = deepcopy,["send"]=function(direct,data,data2)
   bdcst(direct and from or nil,modemPort,data,data2)
 end,["modulemsg"]=function(command,data)
   return msgToModule("message",command,data,add)
+end,["print"]=function(msg)
+  if type(msg) == "table" then
+    historyUpdate(msg[1].text,msg[1].color or 0xFFFFFF,false,msg[1].line or true)
+    for i=2,#msg,1 do
+      historyUpdate(msg[i].text,msg[i].color or 0xFFFFFF,false,msg[i].line or false)
+    end
+  else
+    historyUpdate(msg,0xFFFFFF,false,true)
+  end
 end}
 
 for _,value in pairs(modules) do
@@ -448,6 +462,11 @@ end
 
 advWrite("Press enter to bring up menu",0xFFFFFF,false,true,#viewhistory + 5,true)
 evthread = thread.create(eventCheck)
+
+for i=1,#crashTable,1 do
+  historyUpdate(crashTable[i],0xFF0000,false,true)
+end
+
 while true do
   if modem.isOpen(modemPort) == false then
     modem.open(modemPort)
