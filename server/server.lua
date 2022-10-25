@@ -13,7 +13,7 @@ local process = require("process")
 local thread = require("thread")
 local keyboard = require("keyboard")
 
-local version = "3.0.0"
+local version = "3.0.1"
 
 local serverModules = "https://raw.githubusercontent.com/cadergator10/opencomputer-security-system/main/src/server/modules/modules.txt"
 
@@ -505,56 +505,65 @@ while true do
 
     if port == modemPort then
       if command == "updateuserlist" then --Receives a table of the parts of the table that need to be changed. Because it will do this instead of resetting the entire table, different devices won't mess with other device configurations.
-        for key,value in pairs(ser.unserialize(data)) do
-          userTable[key] = value
-        end
-        local goboi = false
-        if settingTable.pass == false then
-          goboi = true
-        end
-        historyUpdate("Updated userlist received",0x0000C0,false,true)
-        saveTable(userTable, "userlist.txt")
-        for _,value in pairs(modules) do
-          value.setup()
+        data = ser.unserialize(data)
+        if data ~= nil then
+          for key,value in pairs(ser.unserialize(data)) do
+            userTable[key] = value
+          end
+          local goboi = false
+          if settingTable.pass == false then
+            goboi = true
+          end
+          historyUpdate("Updated userlist received",0x0000C0,false,true)
+          saveTable(userTable, "userlist.txt")
+          for _,value in pairs(modules) do
+            value.setup()
+          end
+        else
+          historyUpdate("Error updating userlist: cryptKey may be incorrect",0xFF0000,false,true)
         end
       elseif command == "signIn" then
         data = ser.unserialize(data)
-        if data.command == "signIn" then
-          local count = 0
-          for _,_ in pairs(logUsers) do
-            count = count + 1
-          end
-          if count == 0 then
-            if data.user == "admin" and data.pass == "password" .. tostring(modemPort) then
-              bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize({"all"}),settingTable.cryptKey))
-            else
-              bdcst(from,port,crypt("false",settingTable.cryptKey))
+        if data ~= nil then
+          if data.command == "signIn" then
+            local count = 0
+            for _,_ in pairs(logUsers) do
+              count = count + 1
             end
-          else
-            if logUsers[data.user] ~= nil and crypt(logUsers[data.user].pass,settingTable.cryptKey,true) == data.pass then
-              bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize(logUsers[data.user].perms),settingTable.cryptKey))
+            if count == 0 then
+              if data.user == "admin" and data.pass == "password" .. tostring(modemPort) then
+                bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize({"all"}),settingTable.cryptKey))
+              else
+                bdcst(from,port,crypt("false",settingTable.cryptKey))
+              end
             else
-              bdcst(from,port,crypt("false",settingTable.cryptKey))
+              if logUsers[data.user] ~= nil and crypt(logUsers[data.user].pass,settingTable.cryptKey,true) == data.pass then
+                bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize(logUsers[data.user].perms),settingTable.cryptKey))
+              else
+                bdcst(from,port,crypt("false",settingTable.cryptKey))
+              end
             end
-          end
-        elseif data.command == "update" then
-          logUsers = data.data
-          saveTable(logUsers,"users.txt")
-        elseif data.command == "grab" then
-          local count = 0
-          for _,_ in pairs(logUsers) do
-            count = count + 1
-          end
-          if count == 0 then
-            bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize(logUsers),settingTable.cryptKey))
-          else
-            local e,worked = checkPerms({["command"]="check",["user"]=data.user,["pass"]=data.pass,["prefix"]="dev","usermanagement"})
-            if e and worked then
+          elseif data.command == "update" then
+            logUsers = data.data
+            saveTable(logUsers,"users.txt")
+          elseif data.command == "grab" then
+            local count = 0
+            for _,_ in pairs(logUsers) do
+              count = count + 1
+            end
+            if count == 0 then
               bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize(logUsers),settingTable.cryptKey))
             else
-              bdcst(from,port,crypt("false",settingTable.cryptKey))
+              local e,worked = checkPerms({["command"]="check",["user"]=data.user,["pass"]=data.pass,["prefix"]="dev","usermanagement"})
+              if e and worked then
+                bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize(logUsers),settingTable.cryptKey))
+              else
+                bdcst(from,port,crypt("false",settingTable.cryptKey))
+              end
             end
           end
+        else
+          historyUpdate("Error signing in: cryptKey may be incorrect",0xFF0000,false,true)
         end
       elseif command == "moduleinstall" then
         --TEST: Does module installation work? I gotta move this all to another gitpod thing
@@ -586,35 +595,47 @@ while true do
         end
       elseif command == "checkPerms" then --Example with passes module & adding variables{["user"]="username",["command"]="check",["prefix"]="passes","addvar"} = checks both check.* and check.addvar and all
         data = ser.unserialize(data)
-        local e,worked = checkPerms(data)
-        if e then
-          bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(tostring(worked),settingTable.cryptKey))
+        if data ~= nil then
+          local e,worked = checkPerms(data)
+          if e then
+            bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(tostring(worked),settingTable.cryptKey))
+          else
+            bdcst(from,port,crypt("false",settingTable.cryptKey),crypt(worked,settingTable.cryptKey))
+          end
         else
-          bdcst(from,port,crypt("false",settingTable.cryptKey),crypt(worked,settingTable.cryptKey))
+          historyUpdate("Error checking perms: cryptKey may be incorrect",0xFF0000,false,true)
         end
       elseif command == "setdevice" then
         historyUpdate("Received device parameters from id: " .. add,0xFFFF80,false,true)
         local tmpTable = ser.unserialize(data)
-        tmpTable["id"] = add
-        tmpTable["repeat"] = bing == true and from or false
-        local isInAlready = false
-        for i=1,#doorTable,1 do
-          if doorTable[i].id == add then
-            isInAlready = true
-            doorTable[i] = tmpTable
-            break
+        if data ~= nil then
+          tmpTable["id"] = add
+          tmpTable["repeat"] = bing == true and from or false
+          local isInAlready = false
+          for i=1,#doorTable,1 do
+            if doorTable[i].id == add then
+              isInAlready = true
+              doorTable[i] = tmpTable
+              break
+            end
           end
-        end
-        if isInAlready == false then table.insert(doorTable,tmpTable) end
-        saveTable(doorTable, "devicelist.txt")
-        for _,value in pairs(modules) do
-          value.setup()
+          if isInAlready == false then table.insert(doorTable,tmpTable) end
+          saveTable(doorTable, "devicelist.txt")
+          for _,value in pairs(modules) do
+            value.setup()
+          end
+        else
+          historyUpdate("Error setting device: cryptKey may be incorrect",0xFF0000,false,true)
         end
       elseif command == "loginfo" then
         data = ser.unserialize(data) --Array of arrays. Each array has text and color (color optional)
-        historyUpdate(data[1].text,data[1].color or 0xFFFFFF,false,true)
-        for i=2,#data,1 do
-          historyUpdate(data[i].text,data[i].color or 0xFFFFFF,false,false)
+        if data ~= nil then
+          historyUpdate(data[1].text,data[1].color or 0xFFFFFF,false,true)
+          for i=2,#data,1 do
+            historyUpdate(data[i].text,data[i].color or 0xFFFFFF,false,false)
+          end
+        elseif debug == true then
+          historyUpdate("Received faulty loginfo command parameters",0xFF0000,false,true)
         end
       elseif command == "getquery" then
         local wait = ser.unserialize(data)

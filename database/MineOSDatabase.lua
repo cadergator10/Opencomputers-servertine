@@ -24,13 +24,16 @@ local loc = system.getLocalization(aRD .. "Localizations/")
 --------
 
 local workspace, window, menu, userTable, settingTable, modulesLayout, modules, permissions
-local cardStatusLabel, varContainer, addVarArray, settingsButton, updateButton
+local addVarArray, updateButton
 local usernamename, userpasspass
 
 ----------
 
 local prgName = loc.name
-local version = "v3.0.0"
+local version = "v3.0.1"
+
+local online = true
+local extraOff = false
 
 local modem
 
@@ -79,6 +82,14 @@ local function crypt(str,k,inv)
     end
   end
   return enc;
+end
+
+local function split(s, delimiter)
+  local result = {};
+  for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+    table.insert(result, match);
+  end
+  return result;
 end
 
 --// exportstring( string )
@@ -170,11 +181,12 @@ local function devMod(...)
 
   end
   module.onTouch = function() --TODO: Prepare this for Module installation, user permissions, and more.
-    local userEditButton, moduleInstallButton, layout
+    local userEditButton, moduleInstallButton, settingButton, layout
 
     local function disabledSet()
-      userEditButton.disabled = checkPerms("dev",{"usermanagement"},true)
-      moduleInstallButton.disabled = checkPerms("dev",{"systemmanagement"},true)
+      userEditButton.disabled = online == false and true or checkPerms("dev",{"usermanagement"},true)
+      moduleInstallButton.disabled = online == false and true or checkPerms("dev",{"systemmanagement"},true)
+      settingButton.disabled = online == false and false or checkPerms("dev",{"systemmanagement"},true)
     end
 
     --Big Callbacks
@@ -263,6 +275,7 @@ local function devMod(...)
       layout:removeChildren()
       userEditButton.disabled = true
       moduleInstallButton.disabled = true
+      settingButton.disabled = true
       
       local e,_,_,_,_,peed,meed = callModem(modemPort,"signIn",crypt(ser.serialize({["command"]="grab",["user"]=usernamename,["pass"]=userpasspass}),settingTable.cryptKey))
       if e then
@@ -331,10 +344,12 @@ local function devMod(...)
         disabledSet()
       end
     end
+
     local function moduleInstallation()
       layout:removeChildren()
       userEditButton.disabled = true
       moduleInstallButton.disabled = true
+      settingButton.disabled = true
 
       local moduleTable
       local displayList, downloadList, bothArray, cancelButton, downloadButton,moveRight,moveLeft
@@ -438,11 +453,46 @@ local function devMod(...)
           end
         end
       end]]--TODO: Refactor pageChange function when enough modules come into play that it's important.
-
-      local worked,errored = internet.download(download,aRD .. "temporary.txt")
+      local tempTable, hash = nil, {}
+      local worked,errored = internet.request(download,nil,nil,function(chunk)
+        tempTable = tempTable + chunk
+      end)
       if worked then
-        moduleTable = loadTable(aRD .. "temporary.txt")
-        fs.remove(aRD .. "temporary.txt")
+        moduleTable = {}
+        tempTable = ser.unserialize(tempTable)
+        for _,value in pairs(settingTable.externalModules) do
+          table.insert(tempTable,value)
+        end
+        local res = tempTable
+        tempTable = {}
+        for _,k in ipairs(res) do --Check for duplicates inside of the external module list, so no 2 are downloaded together.
+          if not hash[k] then
+            table.insert(tempTable,k)
+            hash[k] = true
+          end
+        end
+        hash = {}
+        for i=1,#tempTable,1 do
+          local mee = ""
+          worked, errored = internet.request(tempTable[i],nil,nil,function(chunk)
+            mee = mee + chunk
+          end)
+          if worked then
+            mee = ser.unserialize(mee)
+            for i=1,#mee,1 do
+              table.insert(moduleTable,mee[i])
+            end
+          end
+        end
+        res = moduleTable
+        moduleTable = {}
+        for _,k in ipairs(res) do
+          if not hash[k.id] then
+            table.insert(moduleTable,k)
+            hash[k.id] = true
+          end
+        end
+        hash = {}
         bothArray = {}
         bothArray[1],bothArray[2] = {}, {}
         for i=1,#moduleTable,1 do
@@ -451,7 +501,9 @@ local function devMod(...)
         layout:addChild(GUI.label(2,2,1,1,style.listPageLabel,"Available"))
         layout:addChild(GUI.label(41,2,1,1,style.listPageLabel,"Downloading"))
         layout:addChild(GUI.label(2,1,1,1,style.listPageLabel,"# = has requirements / % = database files; @ = server files"))
+        layout:addChild(GUI.panel(1,2,37,29,style.listPanel))
         displayList = layout:addChild(GUI.list(2, 3, 35, 27, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
+        layout:addChild(GUI.panel(40,2,37,29,style.listPanel))
         downloadList = layout:addChild(GUI.list(41, 3, 35, 27, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
         moveRight = layout:addChild(GUI.button(15,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Move Right"))
         moveRight.onTouch = function() --This area manages the moving of data between lists for downloading or removal/no download. More complex due to checking requirements (required files being downloaded as well or removing files that require the file being removed.)
@@ -557,12 +609,98 @@ local function devMod(...)
         disabledSet()
       end
     end
+
+    local function settingCallback()
+      layout:removeChildren()
+      userEditButton.disabled = true
+      moduleInstallButton.disabled = true
+      settingButton.disabled = true
+
+      addVarArray = {["cryptKey"]=settingTable.cryptKey,["style"]=settingTable.style,["autoupdate"]=settingTable.autoupdate,["externalModules"]=settingTable.externalModules}
+      layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"Style"))
+      local styleEdit = layout:addChild(GUI.input(15,1,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
+      styleEdit.text = settingTable.style
+      styleEdit.onInputFinished = function()
+        addVarArray.style = styleEdit.text
+      end
+      layout:addChild(GUI.label(1,4,1,1,style.containerLabel,"Auto update"))
+      local autoupdatebutton = layout:addChild(GUI.button(15,4,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
+      autoupdatebutton.switchMode = true
+      autoupdatebutton.pressed = settingTable.autoupdate
+      autoupdatebutton.onTouch = function()
+        addVarArray.autoupdate = autoupdatebutton.pressed
+      end
+      layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"Port"))
+      local portInput = layout:addChild(GUI.input(15,7,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
+      portInput.text = settingTable.port
+      portInput.onInputFinished = function()
+        addVarArray.port = tonumber(portInput.text)
+      end
+      local function updateExtMods()
+        extMod:clear()
+        for _,value in pairs(addVararray.externalModules) do
+          extMod:addItem(value)
+        end
+      end
+      layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"External modules"))
+      local extMod = layout:addChild(GUI.comboBox(20,9,60,3,style.containerComboBack,style.containerComboText,style.containerComboArrowBack,style.containerComboArrowText))
+      updateExtMods()
+      local addInput = layout:addChild(GUI.input(70,10,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
+      addInput.onInputFinished = function()
+        if addInput.text ~= "" then
+          table.insert(addVarArray.externalModules,addInput.text)
+          addInput.text = ""
+          updateExtMods()
+        end
+      end
+      local remButton = layout:addChild(GUI.button(90,10,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, "remove external"))
+      remButton.onTouch = function()
+        if extMod:count() ~= 0 then
+          table.remove(addVarArray.externalModules,extMod.selectedItem)
+          updateExtMods()
+        end
+      end
+      layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"Crypt Key"))
+      local cryptInput = layout:addChild(GUI.input(15,13,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
+      local disString = tostring(addVarArray.cryptKey[1])
+      for i=2,#addVarArray.cryptKey,1 do
+        disString = disString .. "," .. tostring(addVarArray.cryptKey[i])
+      end
+      cryptInput.text = disString
+      local acceptButton = layout:addChild(GUI.button(15,16,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.submit))
+      acceptButton.onTouch = function()
+        addVarArray.cryptKey = split(cryptInput.text,",")
+        for i=1,#addVarArray.cryptKey,1 do
+          addVarArray.cryptKey[i] = tonumber(addVarArray.cryptKey[i])
+        end
+        settingTable = addVarArray
+        saveTable(settingTable,aRD .. "dbsettings.txt")
+        GUI.alert(loc.settingchangecompleted)
+        updateServer()
+        layout:removeChildren()
+        if modemPort ~= addVarArray.port then
+          modem.close()
+          modemPort = addVarArray.port
+          modem.open(modemPort)
+          window:remove()
+        end
+        disabledSet()
+      end
+      if online == false then
+        portInput.disabled = false
+        autoupdatebutton.disabled = true
+        addInput.disabled = true
+        remButton.disabled = true
+      end
+    end
     
     layout = window:addChild(GUI.container(20,1,window.width - 20, window.height))
     userEditButton = window:addChild(GUI.button(3,3,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Edit Users"))
     userEditButton.onTouch = beginUserEditing
     moduleInstallButton = window:addChild(GUI.button(3,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Manage Modules"))
     moduleInstallButton.onTouch = moduleInstallation
+    settingButton = window:addChild(GUI.button(3,7,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.settingsvar))
+    settingButton.onTouch = settingCallback
     disabledSet()
   end
   module.close = function()
@@ -590,44 +728,11 @@ local function modulePress()
   runModule(selected.module)
 end
 
-local function changeSettings()
-  addVarArray = {["cryptKey"]=settingTable.cryptKey,["style"]=settingTable.style,["autoupdate"]=settingTable.autoupdate}
-  varContainer = GUI.addBackgroundContainer(workspace, true, true)
-  local styleEdit = varContainer.layout:addChild(GUI.input(1,1,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
-  styleEdit.text = settingTable.style
-  styleEdit.onInputFinished = function()
-    addVarArray.style = styleEdit.text
-  end
-  local autoupdatebutton = varContainer.layout:addChild(GUI.button(1,6,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
-  autoupdatebutton.switchMode = true
-  autoupdatebutton.pressed = settingTable.autoupdate
-  autoupdatebutton.onTouch = function()
-    addVarArray.autoupdate = autoupdatebutton.pressed
-  end
-  local portInput = varContainer.layout:addChild(GUI.input(1,11,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
-  portInput.text = settingTable.port
-  portInput.onInputFinished = function()
-    addVarArray.port = tonumber(portInput.text)
-  end
-  local acceptButton = varContainer.layout:addChild(GUI.button(1,16,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.submit))
-  acceptButton.onTouch = function()
-    settingTable = addVarArray
-    saveTable(settingTable,aRD .. "dbsettings.txt")
-    varContainer:removeChildren()
-    varContainer:remove()
-    varContainer = nil
-    GUI.alert(loc.settingchangecompleted)
-    updateServer()
-    window:remove()
-    event.push("gonow")
-  end
-end
-
 ----------Setup GUI
 settingTable = loadTable(aRD .. "dbsettings.txt")
 if settingTable == nil then
   GUI.alert(loc.cryptalert)
-  settingTable = {["cryptKey"]={1,2,3,4,5},["style"]="default.lua",["autoupdate"]=false,["port"]=1000}
+  settingTable = {["cryptKey"]={1,2,3,4,5},["style"]="default.lua",["autoupdate"]=false,["port"]=1000,["externalModules"]={}}
   modem.open(syncPort)
   local e,_,_,_,_, f = callModem(syncPort,"syncport")
   if e then
@@ -635,7 +740,7 @@ if settingTable == nil then
   end
   modem.close(syncPort)
   saveTable(settingTable,aRD .. "dbsettings.txt")
-  return
+  online = false
 end
 if settingTable.style == nil then
   settingTable.style = "default.lua"
@@ -643,6 +748,10 @@ if settingTable.style == nil then
 end
 if settingTable.autoupdate == nil then
   settingTable.autoupdate = false
+  saveTable(settingTable,aRD .. "dbsettings.txt")
+end
+if settingTable.externalModules == nil then
+  settingTable.externalModules = {}
   saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 
@@ -700,6 +809,7 @@ local function finishSetup()
         local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style)
         if success then
           local object = modulesLayout:addItem(result.name)
+          object.disabled = online == true and false or true
           object.module = result
           object.isDefault = false
           object.onTouch = modulePress
@@ -716,23 +826,26 @@ local function finishSetup()
       end
     end
   end
-
-  local check,_,_,_,_,work = callModem(modemPort,"getquery",ser.serialize(tableRay))
-  if check then
-    work = ser.unserialize(crypt(work,settingTable.cryptKey,true))
-    saveTable(work.data,aRD .. "userlist.txt")
-    userTable = work.data
-  else
-    GUI.alert(loc.userlistfailgrab)
-    userTable = loadTable(aRD .. "userlist.txt")
-    if userTable == nil then
-      GUI.alert("No userlist found")
-      window:remove()
+  if online then
+    local check,_,_,_,_,work = callModem(modemPort,"getquery",ser.serialize(tableRay))
+    if check then
+      work = ser.unserialize(crypt(work,settingTable.cryptKey,true))
+      saveTable(work.data,aRD .. "userlist.txt")
+      userTable = work.data
+    else
+      GUI.alert(loc.userlistfailgrab)
+      userTable = loadTable(aRD .. "userlist.txt")
+      if userTable == nil then
+        GUI.alert("No userlist found")
+        window:remove()
+      end
     end
-  end
 
-  for i=1,#modules,1 do
-    modules[i].init(userTable)
+    for i=1,#modules,1 do
+      modules[i].init(userTable)
+    end
+  else
+    modules[1].init(nil)
   end
 
   local contextMenu = menu:addContextMenuItem("File")
@@ -741,17 +854,16 @@ local function finishSetup()
     --os.exit()
   end
 
-  --Settings Stuff
-  settingsButton = window:addChild(GUI.button(40,3,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.settingsvar))
-  settingsButton.onTouch = changeSettings
-
   --Database name and stuff and CardWriter
   window:addChild(GUI.panel(64,2,88,5,style.cardStatusPanel))
   window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " | " .. version))
-  window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,"Welcome " .. usernamename))
-  cardStatusLabel = window:addChild(GUI.label(116, 4, 3,3,style.cardStatusLabel,loc.cardabsent))
+  if online then
+    window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,"Welcome " .. usernamename))
+  else
+    window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,"You are currently OFFLINE"))
+  end
 
-  if settingTable.autoupdate == false then
+  if settingTable.autoupdate == false and online then
     updateButton = window:addChild(GUI.button(40,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.updateserver))
     updateButton.onTouch = function()
       updateServer()
@@ -763,6 +875,7 @@ local function signInPage()
   local username = window.modLayout:addChild(GUI.input(30,3,16,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", "username"))
   local password = window.modLayout:addChild(GUI.input(30,6,16,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", "password",true,"*"))
   local submit = window.modLayout:addChild(GUI.button(30,9,16,1, style.passButton, style.passText, style.passSelectButton, style.passSelectText, "submit"))
+  local offlineMode = window.modLayout:addChild(GUI.button(30,21,16,1, style.passButton, style.passText, style.passSelectButton, style.passSelectText, "offline mode"))
   submit.onTouch = function()
     local check, work
     check,_,_,_,_,work,permissions = callModem(modemPort,"signIn",crypt(ser.serialize({["command"]="signIn",["user"]=username.text,["pass"]=password.text}),settingTable.cryptKey))
@@ -785,9 +898,19 @@ local function signInPage()
       GUI.alert("Failed to receive confirmatin from server")
     end
   end
+  offlineMode.onTouch = function()
+    online = false
+    modem.close()
+    window.modLayout:removeChildren()
+    finishSetup()
+  end
 end
 
-signInPage()
+if online then
+  signInPage()
+else
+  finishSetup()
+end
 
 workspace:draw()
 workspace:start()
