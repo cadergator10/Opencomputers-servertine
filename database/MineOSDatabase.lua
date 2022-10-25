@@ -186,7 +186,11 @@ local function devMod(...)
     local function disabledSet()
       userEditButton.disabled = online == false and true or checkPerms("dev",{"usermanagement"},true)
       moduleInstallButton.disabled = online == false and true or checkPerms("dev",{"systemmanagement"},true)
-      settingButton.disabled = online == false and false or checkPerms("dev",{"systemmanagement"},true)
+      if online then
+        settingButton.disabled = checkPerms("dev",{"systemmanagement"},true)
+      else
+        settingButton.disabled = false
+      end
     end
 
     --Big Callbacks
@@ -616,7 +620,7 @@ local function devMod(...)
       moduleInstallButton.disabled = true
       settingButton.disabled = true
 
-      addVarArray = {["cryptKey"]=settingTable.cryptKey,["style"]=settingTable.style,["autoupdate"]=settingTable.autoupdate,["externalModules"]=settingTable.externalModules}
+      addVarArray = {["cryptKey"]=settingTable.cryptKey,["style"]=settingTable.style,["autoupdate"]=settingTable.autoupdate,["externalModules"]=settingTable.externalModules,["port"]=settingTable.port}
       layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"Style"))
       local styleEdit = layout:addChild(GUI.input(15,1,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       styleEdit.text = settingTable.style
@@ -630,22 +634,23 @@ local function devMod(...)
       autoupdatebutton.onTouch = function()
         addVarArray.autoupdate = autoupdatebutton.pressed
       end
-      layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"Port"))
+      layout:addChild(GUI.label(1,7,1,1,style.containerLabel,"Port"))
       local portInput = layout:addChild(GUI.input(15,7,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       portInput.text = settingTable.port
       portInput.onInputFinished = function()
         addVarArray.port = tonumber(portInput.text)
       end
+      local extMod
       local function updateExtMods()
         extMod:clear()
-        for _,value in pairs(addVararray.externalModules) do
+        for _,value in pairs(addVarArray.externalModules) do
           extMod:addItem(value)
         end
       end
-      layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"External modules"))
-      local extMod = layout:addChild(GUI.comboBox(20,9,60,3,style.containerComboBack,style.containerComboText,style.containerComboArrowBack,style.containerComboArrowText))
+      layout:addChild(GUI.label(1,10,1,1,style.containerLabel,"External modules"))
+      extMod = layout:addChild(GUI.comboBox(20,9,60,3,style.containerComboBack,style.containerComboText,style.containerComboArrowBack,style.containerComboArrowText))
       updateExtMods()
-      local addInput = layout:addChild(GUI.input(70,10,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
+      local addInput = layout:addChild(GUI.input(80,10,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       addInput.onInputFinished = function()
         if addInput.text ~= "" then
           table.insert(addVarArray.externalModules,addInput.text)
@@ -653,14 +658,14 @@ local function devMod(...)
           updateExtMods()
         end
       end
-      local remButton = layout:addChild(GUI.button(90,10,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, "remove external"))
+      local remButton = layout:addChild(GUI.button(100,10,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, "remove external"))
       remButton.onTouch = function()
         if extMod:count() ~= 0 then
           table.remove(addVarArray.externalModules,extMod.selectedItem)
           updateExtMods()
         end
       end
-      layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"Crypt Key"))
+      layout:addChild(GUI.label(1,13,1,1,style.containerLabel,"Crypt Key"))
       local cryptInput = layout:addChild(GUI.input(15,13,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       local disString = tostring(addVarArray.cryptKey[1])
       for i=2,#addVarArray.cryptKey,1 do
@@ -687,6 +692,7 @@ local function devMod(...)
         disabledSet()
       end
       if online == false then
+        styleEdit.disabled = true
         portInput.disabled = false
         autoupdatebutton.disabled = true
         addInput.disabled = true
