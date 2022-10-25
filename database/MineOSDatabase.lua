@@ -635,7 +635,7 @@ local function devMod(...)
         addVarArray.autoupdate = autoupdatebutton.pressed
       end
       layout:addChild(GUI.label(1,7,1,1,style.containerLabel,"Port"))
-      local portInput = layout:addChild(GUI.input(15,7,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
+      local portInput = layout:addChild(GUI.input(15,7,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
       portInput.text = settingTable.port
       portInput.onInputFinished = function()
         addVarArray.port = tonumber(portInput.text)
@@ -650,7 +650,7 @@ local function devMod(...)
       layout:addChild(GUI.label(1,10,1,1,style.containerLabel,"External modules"))
       extMod = layout:addChild(GUI.comboBox(20,9,60,3,style.containerComboBack,style.containerComboText,style.containerComboArrowBack,style.containerComboArrowText))
       updateExtMods()
-      local addInput = layout:addChild(GUI.input(80,10,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
+      local addInput = layout:addChild(GUI.input(80,10,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
       addInput.onInputFinished = function()
         if addInput.text ~= "" then
           table.insert(addVarArray.externalModules,addInput.text)
