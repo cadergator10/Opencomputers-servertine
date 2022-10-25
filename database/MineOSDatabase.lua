@@ -457,10 +457,10 @@ local function devMod(...)
           end
         end
       end]]--TODO: Refactor pageChange function when enough modules come into play that it's important.
-      local tempTable, hash = nil, {}
-      local worked,errored = internet.request(download,nil,nil,function(chunk)
-        tempTable = tempTable + chunk
-      end)
+      local tempTable, hash = "", {}
+      local worked,errored = internet.rawRequest(download,nil,nil,function(chunk)
+        tempTable = tempTable .. chunk
+      end, 100)
       if worked then
         moduleTable = {}
         tempTable = ser.unserialize(tempTable)
@@ -470,7 +470,7 @@ local function devMod(...)
         local res = tempTable
         tempTable = {}
         for _,k in ipairs(res) do --Check for duplicates inside of the external module list, so no 2 are downloaded together.
-          if not hash[k] then
+          if not hash[k] then --ERROR
             table.insert(tempTable,k)
             hash[k] = true
           end
@@ -478,9 +478,9 @@ local function devMod(...)
         hash = {}
         for i=1,#tempTable,1 do
           local mee = ""
-          worked, errored = internet.request(tempTable[i],nil,nil,function(chunk)
-            mee = mee + chunk
-          end)
+          worked, errored = internet.rawRequest(tempTable[i],nil,nil,function(chunk)
+            mee = mee .. chunk
+          end,100)
           if worked then
             mee = ser.unserialize(mee)
             for i=1,#mee,1 do
@@ -815,7 +815,11 @@ local function finishSetup()
         local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style)
         if success then
           local object = modulesLayout:addItem(result.name)
-          object.disabled = online == true and false or true
+          if online then
+            object.disabled = false
+          else
+            object.disabled = true
+          end
           object.module = result
           object.isDefault = false
           object.onTouch = modulePress
