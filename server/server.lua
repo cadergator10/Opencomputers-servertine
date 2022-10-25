@@ -507,7 +507,7 @@ while true do
       if command == "updateuserlist" then --Receives a table of the parts of the table that need to be changed. Because it will do this instead of resetting the entire table, different devices won't mess with other device configurations.
         data = ser.unserialize(data)
         if data ~= nil then
-          for key,value in pairs(ser.unserialize(data)) do
+          for key,value in pairs(data) do
             userTable[key] = value
           end
           local goboi = false
@@ -608,7 +608,7 @@ while true do
       elseif command == "setdevice" then
         historyUpdate("Received device parameters from id: " .. add,0xFFFF80,false,true)
         local tmpTable = ser.unserialize(data)
-        if data ~= nil then
+        if tmpTable ~= nil then
           tmpTable["id"] = add
           tmpTable["repeat"] = bing == true and from or false
           local isInAlready = false
