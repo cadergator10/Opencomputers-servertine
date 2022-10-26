@@ -458,19 +458,25 @@ local function devMod(...)
         end
       end]]--TODO: Refactor pageChange function when enough modules come into play that it's important.
       local tempTable, hash = "", {}
+      local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
+      pog.active = true
+      pog:roll()
       local worked,errored = internet.rawRequest(download,nil,nil,function(chunk)
+        pog:roll()
         tempTable = tempTable .. chunk
       end, 100)
       if worked then
         moduleTable = {}
         tempTable = ser.unserialize(tempTable)
         for _,value in pairs(settingTable.externalModules) do
+          pog:roll()
           table.insert(tempTable,value)
         end
         local res = tempTable
         tempTable = {}
         for _,k in ipairs(res) do --Check for duplicates inside of the external module list, so no 2 are downloaded together.
-          if not hash[k] then --ERROR
+          pog:roll()
+          if not hash[k] then
             table.insert(tempTable,k)
             hash[k] = true
           end
@@ -479,6 +485,7 @@ local function devMod(...)
         for i=1,#tempTable,1 do
           local mee = ""
           worked, errored = internet.rawRequest(tempTable[i],nil,nil,function(chunk)
+            pog:roll()
             mee = mee .. chunk
           end,100)
           if worked then
@@ -491,11 +498,13 @@ local function devMod(...)
         res = moduleTable
         moduleTable = {}
         for _,k in ipairs(res) do
+          pog:roll()
           if not hash[k.id] then
             table.insert(moduleTable,k)
             hash[k.id] = true
           end
         end
+        pog.active = false
         hash = {}
         bothArray = {}
         bothArray[1],bothArray[2] = {}, {}
@@ -571,7 +580,6 @@ local function devMod(...)
           moduleInstallButton.disabled = true
           modulesLayout:removeChildren()
           layout:addChild(GUI.label(2,15,3,3,style.listPageLabel,"Downloading " .. #bothArray[2] .. " modules. Be patient and do not exit/power down..."))
-          local pog = layout:addChild(GUI.progressIndicator(4,18,0x3C3C3C, 0x00B640, 0x99FF80))
           pog.active = true
           workspace:draw()
           local serverMods = {}
