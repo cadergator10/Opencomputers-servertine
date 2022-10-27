@@ -583,7 +583,7 @@ local function devMod(...)
           userEditButton.disabled = true
           moduleInstallButton.disabled = true
           modulesLayout:removeChildren()
-          layout:addChild(GUI.label(2,15,3,3,style.listPageLabel,loc.downloading .. " " .. #bothArray[2] .. loc.modules .. ". " .. loc.downloadinginfo))
+          layout:addChild(GUI.label(2,15,3,3,style.listPageLabel,loc.downloading .. " " .. #bothArray[2] .. " " .. loc.modules .. ". " .. loc.downloadinginfo))
           pog.active = true
           workspace:draw()
           local serverMods = {}
