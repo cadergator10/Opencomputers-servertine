@@ -526,11 +526,13 @@ local function devMod(...)
           table.remove(bothArray[1],i)
           local function removeRequirements(removeId)
             for _,value in pairs(removeId) do
+              local buffer = 0
               for j=1,#bothArray[1],1 do
-                if bothArray[1][j].id == value then
+                if bothArray[1][j - buffer].id == value then
                   local be = bothArray[1][j].requirements
                   table.insert(bothArray[2],bothArray[1][j])
                   table.remove(bothArray[1],j)
+                  buffer = buffer + 1
                   removeRequirements(be)
                 end
               end
@@ -558,10 +560,12 @@ local function devMod(...)
           end
           removeRequirements(backup)
           for _,value in pairs(idList) do
+            local buffer = 0
             for j=1,#bothArray[2],1 do
-              if bothArray[2][j].id == value then
-                table.insert(bothArray[1],bothArray[2][j])
-                table.remove(bothArray[2],j)
+              if bothArray[2][j - buffer].id == value then
+                table.insert(bothArray[1],bothArray[2][j - buffer])
+                table.remove(bothArray[2],j - buffer)
+                buffer = buffer + 1
               end
             end
           end --TODO: DOuble check this is all good.
