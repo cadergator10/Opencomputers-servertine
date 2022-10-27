@@ -340,11 +340,11 @@ local function devMod(...)
           listDown2 = window:addChild(GUI.button(53,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "-"))
           listDown2.onTouch, listDown2.isPos, listDown2.isListNum = pageCallback,false,2
         else
-          GUI.alert("incorrect permissions to grab userlist")
+          GUI.alert(loc.incorrectpermusergrab)
           disabledSet()
         end
       else
-        GUI.alert("failed to grab permissions")
+        GUI.alert(loc.userpermfail)
         disabledSet()
       end
     end
@@ -511,14 +511,14 @@ local function devMod(...)
         for i=1,#moduleTable,1 do
           table.insert(bothArray[1],moduleTable[i])
         end
-        layout:addChild(GUI.label(2,2,1,1,style.listPageLabel,"Available"))
-        layout:addChild(GUI.label(41,2,1,1,style.listPageLabel,"Downloading"))
-        layout:addChild(GUI.label(2,1,1,1,style.listPageLabel,"# = has requirements / % = database files; @ = server files"))
+        layout:addChild(GUI.label(2,2,1,1,style.listPageLabel,loc.available))
+        layout:addChild(GUI.label(41,2,1,1,style.listPageLabel,loc.downloading))
+        layout:addChild(GUI.label(2,1,1,1,style.listPageLabel,loc.modulerequirementinfo))
         layout:addChild(GUI.panel(1,2,37,29,style.listPanel))
         displayList = layout:addChild(GUI.list(2, 3, 35, 27, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
         layout:addChild(GUI.panel(40,2,37,29,style.listPanel))
         downloadList = layout:addChild(GUI.list(41, 3, 35, 27, 3, 0, style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
-        moveRight = layout:addChild(GUI.button(15,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Move Right"))
+        moveRight = layout:addChild(GUI.button(15,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.move .. " " .. loc.right))
         moveRight.onTouch = function() --This area manages the moving of data between lists for downloading or removal/no download. More complex due to checking requirements (required files being downloaded as well or removing files that require the file being removed.)
           local i = pageMult * listPageNumber + displayList.selectedItem
           table.insert(bothArray[2],bothArray[1][i])
@@ -539,7 +539,7 @@ local function devMod(...)
           removeRequirements(removeId)
           updateLists()
         end
-        moveLeft = layout:addChild(GUI.button(56,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Move Left"))
+        moveLeft = layout:addChild(GUI.button(56,31,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.move .. " " .. loc.left))
         moveLeft.onTouch = function()
           local i = pageMult * listPageNumber2 + downloadList.selectedItem
           table.insert(bothArray[1],bothArray[2][i])
@@ -567,19 +567,19 @@ local function devMod(...)
           end --TODO: DOuble check this is all good.
           updateLists()
         end
-        cancelButton = layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Cancel"))
+        cancelButton = layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.cancel))
         cancelButton.onTouch = function()
           layout:removeChildren()
           disabledSet()
         end
-        downloadButton = layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Setup Modules"))
+        downloadButton = layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.setup .. " " .. loc.modules))
         downloadButton.onTouch = function()
           --TODO: Make this download all the necessary stuff cause I lazies.
           layout:removeChildren()
           userEditButton.disabled = true
           moduleInstallButton.disabled = true
           modulesLayout:removeChildren()
-          layout:addChild(GUI.label(2,15,3,3,style.listPageLabel,"Downloading " .. #bothArray[2] .. " modules. Be patient and do not exit/power down..."))
+          layout:addChild(GUI.label(2,15,3,3,style.listPageLabel,loc.downloading .. " " .. #bothArray[2] .. loc.modules .. ". " .. loc.downloadinginfo))
           pog.active = true
           workspace:draw()
           local serverMods = {}
@@ -606,11 +606,11 @@ local function devMod(...)
             end
             --After done with downloading
             pog.active = false
-            GUI.alert("Everything has been downloaded on the database. The server will need a reboot after it's done downloading all of the modules. Please restart server after it's done then restart database.")
+            GUI.alert(loc.moduledownloadsuccess)
             window:removeChildren()
             window:remove()
           else
-            GUI.alert("Failed to send server modules. Either the server is offline or there was an error on the server end.")
+            GUI.alert(loc.sendservermodfail)
             window:removeChildren()
             window:remove()
           end

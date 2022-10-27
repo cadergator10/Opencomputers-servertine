@@ -70,5 +70,20 @@
     sectorpasslabel = "Добавлены проходы в сектора",
     inputlevel = "входной уровень",
     disabled = "запрещать",
-    allpasseslabel = "Все пропуска"
+    allpasseslabel = "Все пропуска",
+
+    incorrectpermusergrab = "incorrect permissions to grab userlist",
+    userpermfail = "failed to grab permissions",
+    available = "available",
+    downloading = "downloading",
+    modulerequirementinfo = "# = has requirements / % = database files; @ = server files",
+    move = "move",
+    right = "right",
+    left = "left",
+    cancel = "cancel",
+    setup = "setup",
+    modules = "modules",
+    downloadinginfo = "Be patient and do not exit/power down...",
+    sendservermodfail = "Failed to send server modules. Either the server is offline or there was an error on the server end.",
+    moduledownloadsuccess = "Everything has been downloaded on the database. The server will need a reboot after it's done downloading all of the modules. Please restart server after it's done then restart database."
 }
