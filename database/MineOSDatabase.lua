@@ -13,6 +13,7 @@ local ser = require("serialization")
 local uuid = require("uuid")
 local fs = require("Filesystem")
 local internet = require("Internet")
+local json = require("Json")
 local writer
 
 local aRD = fs.path(system.getCurrentScript())
@@ -67,8 +68,9 @@ end
 
 -----------
 
-local function apiCall(address,postData)
-
+local function apiCall(address,rawCall,postData)
+  local worked, erroer = internet.rawRequest(apiUrl .. address, nil, nil, rawCall, 5000)
+  return worked, erroer
 end
 
 local function convert( chars, dist, inv )
@@ -389,11 +391,20 @@ local function devMod(...)
             if #bothArray[1][i].requirements ~= 0 then
               text = text .. "#"
             end
-            if bothArray[1][i].database ~= nil then
-              text = text .. "%"
+            for _,value in pairs(bothArray[1][i].files) do
+              if value.type == 1 then
+                text = text .. "%"
+                break
+              end
             end
-            if bothArray[1][i].server ~= nil then
-              text = text .. "@"
+            for _,value in pairs(bothArray[1][i].files) do
+              if value.type == 1 then
+                text = text .. "@"
+                break
+              end
+            end
+            if bothArray[1][i].official == true then
+              text = text .. "!"
             end
             displayList:addItem(bothArray[1][i].name .. text)
           end
@@ -409,11 +420,20 @@ local function devMod(...)
             if #bothArray[2][i].requirements ~= 0 then
               text = text .. "#"
             end
-            if bothArray[2][i].database ~= nil then
-              text = text .. "%"
+            for _,value in pairs(bothArray[2][i].files) do
+              if value.type == 1 then
+                text = text .. "%"
+                break
+              end
             end
-            if bothArray[2][i].server ~= nil then
-              text = text .. "@"
+            for _,value in pairs(bothArray[2][i].files) do
+              if value.type == 1 then
+                text = text .. "@"
+                break
+              end
+            end
+            if bothArray[2][i].official == true then
+              text = text .. "!"
             end
             downloadList:addItem(bothArray[2][i].name .. text)
           end
@@ -472,20 +492,20 @@ local function devMod(...)
       local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
       pog.active = true
       pog:roll()
-      local worked,errored = internet.rawRequest(download,nil,nil,function(chunk)
+      local worked,errored = apiCall("modules",function(chunk)
         pog:roll()
         tempTable = tempTable .. chunk
-      end, 100)
+      end, nil)
       if worked then
         moduleTable = {}
-        tempTable = ser.unserialize(tempTable)
-        for _,value in pairs(settingTable.externalModules) do
+        tempTable = json.decode(tempTable)
+        --[[for _,value in pairs(settingTable.externalModules) do --Disabled due to no need for external modules
           pog:roll()
           table.insert(tempTable,value)
-        end
+        end]]
         local res = tempTable
         tempTable = {}
-        for _,k in ipairs(res) do --Check for duplicates inside of the external module list, so no 2 are downloaded together.
+        --[[for _,k in ipairs(res) do --Check for duplicates inside of the external module list, so no 2 are downloaded together.
           pog:roll()
           if not hash[k] then
             table.insert(tempTable,k)
@@ -505,16 +525,16 @@ local function devMod(...)
               table.insert(moduleTable,mee[i])
             end
           end
-        end
+        end]]
         res = moduleTable
         moduleTable = {}
-        for _,k in ipairs(res) do
+        --[[for _,k in ipairs(res) do
           pog:roll()
           if not hash[k.id] then
             table.insert(moduleTable,k)
             hash[k.id] = true
           end
-        end
+        end]]
         pog.active = false
         hash = {}
         bothArray = {}
@@ -600,11 +620,28 @@ local function devMod(...)
           local serverMods = {}
           local dbMods = {}
           for _,value in pairs(bothArray[2]) do
-            if value.server ~= nil then
-              table.insert(serverMods,value.server)
+            isServer, isData = false, false
+            for _,value2 in pairs(value.files) do
+              if value2.type == 0 then
+                if isServer == false then
+                  isServer = {["folder"] = value.name}
+                end
+                table.insert(isServer, {["filename"] = value2.filename, ["url"] = value2.url})
+              end
             end
-            if value.database ~= nil then
-              table.insert(dbMods,value.database)
+            if isServer ~= false then
+              table.insert(serverMods, isServer)
+            end
+            for _,value2 in pairs(value.files) do
+              if value2.type == 1 then
+                if isData == false then
+                  isData = {["folder"] = value.name}
+                end
+                table.insert(isData, {["filename"] = value2.filename, ["url"] = value2.url})
+              end
+            end
+            if isData ~= false then
+              table.insert(dbMods, isData)
             end
           end
           serverMods.debug = moduleDownloadDebug
@@ -614,9 +651,8 @@ local function devMod(...)
             fs.makeDirectory(aRD .. "/Modules")
             for _,value in pairs(dbMods) do
               fs.makeDirectory(modulesPath .. value.folder)
-              internet.download(moduleDownloadDebug and value.debug or value.main,modulesPath .. value.folder .. "/Main.lua")
-              for i=1,#value.extras,1 do
-                internet.download(value.extras[i].url,modulesPath .. value.folder .. "/" .. value.extras[i].name)
+              for i=1,#value,1 do
+                internet.download(value[i].url,modulesPath .. value.folder .. "/" .. value[i].filename)
               end
             end
             --After done with downloading

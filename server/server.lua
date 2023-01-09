@@ -13,9 +13,10 @@ local process = require("process")
 local thread = require("thread")
 local keyboard = require("keyboard")
 
-local version = "3.0.1"
+local version = "3.0.2"
 
 local serverModules = "https://raw.githubusercontent.com/cadergator10/opencomputer-security-system/main/src/server/modules/modules.txt"
+local apiUrl = "https://cadespc.com/api/servertine/"
 
 local commands = {"setdevice","signIn","updateuserlist","loginfo","getquery","syncport","moduleinstall"}
 local skipcrypt = {"loginfo","getquery","syncport"}
@@ -579,13 +580,8 @@ while true do
           os.execute("mkdir modules")
           for j=1,#data,1 do
             os.execute("mkdir modules/" .. data[j].folder)
-            if data.debug then
-              os.execute ("wget -f " .. data[j].debug .. " modules/" .. data[j].folder .. "/Main.lua")
-            else
-              os.execute ("wget -f " .. data[j].main .. " modules/" .. data[j].folder .. "/Main.lua")
-            end
-            for i=1,#data[j].extras,1 do
-              os.execute("wget -f " .. data[j].extras[i].url .. " modules/" .. data[j].folder .. "/" .. data[j].extras[i].name)
+            for i=1,#data[j],1 do
+              os.execute("wget -f " .. data[j][i].url .. " modules/" .. data[j].folder .. "/" .. data[j][i].filename)
             end
           end
           print("Finished downloading modules. Restart server")

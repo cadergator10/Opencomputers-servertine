@@ -76,7 +76,7 @@
     userpermfail = "failed to grab permissions",
     available = "available",
     downloading = "downloading",
-    modulerequirementinfo = "# = has requirements / % = database files; @ = server files",
+    modulerequirementinfo = "# = has requirements / % = database files / @ = server files / ! = verified module",
     move = "move",
     right = "right",
     left = "left",
