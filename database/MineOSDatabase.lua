@@ -30,17 +30,19 @@ local usernamename, userpasspass
 ----------
 
 local prgName = loc.name
-local version = "v3.0.1"
+local version = "v3.0.2"
 
 local online = true
 local extraOff = false
 
 local modem
+local intern = false
 
 local tableRay = {}
 local prevmod
 
 local download = "https://raw.githubusercontent.com/cadergator10/Opencomputers-serpentine/main/modules.txt"
+local apiUrl = "https://cadespc.com/api/servertine/"
 local debug = false
 local moduleDownloadDebug = false
 
@@ -57,8 +59,17 @@ else
   GUI.alert(loc.modemalert)
   return
 end
+if component.isAvailable("internet") == false then
+  GUI.alert("It is recommended to have an internet card installed")
+else
+  intern = true
+end
 
 -----------
+
+local function apiCall(address,postData)
+
+end
 
 local function convert( chars, dist, inv )
   return string.char( ( string.byte( chars ) - 32 + ( inv and -dist or dist ) ) % 95 + 32 )
