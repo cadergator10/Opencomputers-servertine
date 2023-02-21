@@ -40,9 +40,9 @@ local modem
 local tableRay = {}
 local prevmod
 
-local download = "https://raw.githubusercontent.com/cadergator10/Opencomputers-serpentine/main/modules.txt"
+local download = "https://cadespc.com/servertine/modules/"
 local debug = false
-local moduleDownloadDebug = false
+--local moduleDownloadDebug = false
 
 
 if component.isAvailable("os_cardwriter") then
@@ -375,16 +375,16 @@ local function devMod(...)
         for i=pageMult * listPageNumber + 1,pageMult * listPageNumber + pageMult,1 do
           if bothArray[1][i] ~= nil then
             text = " "
-            if #bothArray[1][i].requirements ~= 0 then
+            if #bothArray[1][i].module.requirements ~= nil then
               text = text .. "#"
             end
-            if bothArray[1][i].database ~= nil then
+            if bothArray[1][i].hasDatabase ~= nil then
               text = text .. "%"
             end
-            if bothArray[1][i].server ~= nil then
+            if bothArray[1][i].hasServer ~= nil then
               text = text .. "@"
             end
-            displayList:addItem(bothArray[1][i].name .. text)
+            displayList:addItem(bothArray[1][i].module.name .. text)
           end
         end
         if bothArray[1][1] == nil then
@@ -395,16 +395,16 @@ local function devMod(...)
         for i=pageMult * listPageNumber2 + 1,pageMult * listPageNumber2 + pageMult,1 do
           if bothArray[2][i] ~= nil then
             text = " "
-            if #bothArray[2][i].requirements ~= 0 then
+            if #bothArray[2][i].module.requirements ~= nil then
               text = text .. "#"
             end
-            if bothArray[2][i].database ~= nil then
+            if bothArray[2][i].hasDatabase ~= nil then
               text = text .. "%"
             end
-            if bothArray[2][i].server ~= nil then
+            if bothArray[2][i].hasServer ~= nil then
               text = text .. "@"
             end
-            downloadList:addItem(bothArray[2][i].name .. text)
+            downloadList:addItem(bothArray[2][i].module.name .. text)
           end
         end
         if bothArray[2][1] == nil then
@@ -461,18 +461,14 @@ local function devMod(...)
       local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
       pog.active = true
       pog:roll()
-      local worked,errored = internet.rawRequest(download,nil,nil,function(chunk)
+      local worked,errored = internet.rawRequest(download .. "getmodules",nil,nil,function(chunk) --TODO: GET ALL MODULES WITH CORRECT URL
         pog:roll()
         tempTable = tempTable .. chunk
-      end, 100)
+      end, 1000)
       if worked then
         moduleTable = {}
-        tempTable = ser.unserialize(tempTable)
-        for _,value in pairs(settingTable.externalModules) do
-          pog:roll()
-          table.insert(tempTable,value)
-        end
-        local res = tempTable
+        tempTable = ser.unserialize(tempTable).modules
+        --[[local res = tempTable --NO LONGER NEED DUE TO IT ALL BEING ON A WEBSITE
         tempTable = {}
         for _,k in ipairs(res) do --Check for duplicates inside of the external module list, so no 2 are downloaded together.
           pog:roll()
@@ -487,28 +483,29 @@ local function devMod(...)
           worked, errored = internet.rawRequest(tempTable[i],nil,nil,function(chunk)
             pog:roll()
             mee = mee .. chunk
-          end,100)
+          end,1000)
           if worked then
             mee = ser.unserialize(mee)
             for i=1,#mee,1 do
               table.insert(moduleTable,mee[i])
             end
           end
-        end
-        res = moduleTable
-        moduleTable = {}
-        for _,k in ipairs(res) do
+        end]]
+        --res = tempTable
+        moduleTable = tempTable
+        --[[for _,k in ipairs(res) do
           pog:roll()
           if not hash[k.id] then
             table.insert(moduleTable,k)
             hash[k.id] = true
           end
-        end
+        end]]
         pog.active = false
         hash = {}
         bothArray = {}
         bothArray[1],bothArray[2] = {}, {}
         for i=1,#moduleTable,1 do
+          moduleTable[i].module.requirements = split(moduleTable[i].module.requirements,",")
           table.insert(bothArray[1],moduleTable[i])
         end
         layout:addChild(GUI.label(2,2,1,1,style.listPageLabel,loc.available))
@@ -522,14 +519,14 @@ local function devMod(...)
         moveRight.onTouch = function() --This area manages the moving of data between lists for downloading or removal/no download. More complex due to checking requirements (required files being downloaded as well or removing files that require the file being removed.)
           local i = pageMult * listPageNumber + displayList.selectedItem
           table.insert(bothArray[2],bothArray[1][i])
-          local removeId = bothArray[1][i].requirements
+          local removeId = bothArray[1][i].module.requirements
           table.remove(bothArray[1],i)
           local function removeRequirements(removeId)
             for _,value in pairs(removeId) do
               local buffer = 0
               for j=1,#bothArray[1],1 do
-                if bothArray[1][j - buffer].id == value then
-                  local be = bothArray[1][j].requirements
+                if bothArray[1][j - buffer].module.id == tunumber(value) then
+                  local be = bothArray[1][j].module.requirements
                   table.insert(bothArray[2],bothArray[1][j])
                   table.remove(bothArray[1],j)
                   buffer = buffer + 1
@@ -545,15 +542,15 @@ local function devMod(...)
         moveLeft.onTouch = function()
           local i = pageMult * listPageNumber2 + downloadList.selectedItem
           table.insert(bothArray[1],bothArray[2][i])
-          local backup = bothArray[2][i].id
+          local backup = bothArray[2][i].module.id
           table.remove(bothArray[2],i)
           local idList = {}
           local function removeRequirements(removeId)
             for j=1,#bothArray[2],1 do
-              for _,value in pairs(bothArray[2][j].requirements) do
-                if value == removeId then
-                  table.insert(idList,bothArray[2][j].id)
-                  removeRequirements(bothArray[2][j].id)
+              for _,value in pairs(bothArray[2][j].module.requirements) do
+                if tonumber(value) == removeId then
+                  table.insert(idList,bothArray[2][j].module.id)
+                  removeRequirements(bothArray[2][j].module.id)
                 end
               end
             end
@@ -562,7 +559,7 @@ local function devMod(...)
           for _,value in pairs(idList) do
             local buffer = 0
             for j=1,#bothArray[2],1 do
-              if bothArray[2][j - buffer].id == value then
+              if bothArray[2][j - buffer].module.id == value then
                 table.insert(bothArray[1],bothArray[2][j - buffer])
                 table.remove(bothArray[2],j - buffer)
                 buffer = buffer + 1
@@ -589,24 +586,27 @@ local function devMod(...)
           local serverMods = {}
           local dbMods = {}
           for _,value in pairs(bothArray[2]) do
-            if value.server ~= nil then
+            if value.hasServer ~= nil then
               table.insert(serverMods,value.server)
             end
-            if value.database ~= nil then
+            if value.hasDatabase ~= nil then
               table.insert(dbMods,value.database)
             end
           end
-          serverMods.debug = moduleDownloadDebug
+          serverMods.debug = false
           local e,_,_,_,_,good = callModem(modemPort,"moduleinstall",crypt(ser.serialize(serverMods),settingTable.cryptKey))
           if e and crypt(good,settingTable.cryptKey,true) == "true" then --TEST: Does this successfully install everything
             if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
             fs.makeDirectory(aRD .. "/Modules")
             for _,value in pairs(dbMods) do
-              fs.makeDirectory(modulesPath .. value.folder)
-              internet.download(moduleDownloadDebug and value.debug or value.main,modulesPath .. value.folder .. "/Main.lua")
-              for i=1,#value.extras,1 do
-                internet.download(value.extras[i].url,modulesPath .. value.folder .. "/" .. value.extras[i].name)
+              fs.makeDirectory(modulesPath .. "modid" .. tostring(value.module.id))
+              for i=1,#value.files,1 do
+                internet.download(value.files[i].url,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
               end
+            end
+            settingTable.moduleVersions = {}
+            for _, value in pairs(bothArray[2]) do --Save versions to check for updates
+              settingTable.moduleVersions[value.module.id] = value.module.version
             end
             --After done with downloading
             pog.active = false
@@ -652,7 +652,7 @@ local function devMod(...)
       portInput.onInputFinished = function()
         addVarArray.port = tonumber(portInput.text)
       end
-      local extMod
+      --[[local extMod
       local function updateExtMods()
         extMod:clear()
         for _,value in pairs(addVarArray.externalModules) do
@@ -676,7 +676,7 @@ local function devMod(...)
           table.remove(addVarArray.externalModules,extMod.selectedItem)
           updateExtMods()
         end
-      end
+      end]]
       layout:addChild(GUI.label(1,13,1,1,style.containerLabel,"Crypt Key"))
       local cryptInput = layout:addChild(GUI.input(15,13,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       local disString = tostring(addVarArray.cryptKey[1])
@@ -768,8 +768,12 @@ if settingTable.autoupdate == nil then
   settingTable.autoupdate = false
   saveTable(settingTable,aRD .. "dbsettings.txt")
 end
-if settingTable.externalModules == nil then
-  settingTable.externalModules = {}
+if settingTable.externalModules ~= nil then
+  settingTable.externalModules = nil
+  saveTable(settingTable,aRD .. "dbsettings.txt")
+end
+if settingTable.moduleVersions == nil then
+  settingTable.moduleVersions = {}
   saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 
@@ -894,6 +898,17 @@ local function finishSetup()
 end
 
 local function signInPage()
+  local updates, error = internet.request(download .. "getversions")
+  if updates then
+    for _, upd in pairs(ser.unserialize(updates).modules) do
+      if settingTable.moduleVersions[upd.id] ~= upd.version then
+        GUI.alert("Some modules are out of date")
+        break
+      end
+    end
+  else
+    GUI.alert("Error getting versions: " .. error)
+  end
   local username = window.modLayout:addChild(GUI.input(30,3,16,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", "username"))
   local password = window.modLayout:addChild(GUI.input(30,6,16,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", "password",true,"*"))
   local submit = window.modLayout:addChild(GUI.button(30,9,16,1, style.passButton, style.passText, style.passSelectButton, style.passSelectText, "submit"))
