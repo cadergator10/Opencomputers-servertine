@@ -461,7 +461,7 @@ local function devMod(...)
       local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
       pog.active = true
       pog:roll()
-      local worked,errored = internet.rawRequest(download .. "getmodules",nil,nil,function(chunk) --TODO: GET ALL MODULES WITH CORRECT URL
+      local worked,errored = internet.rawRequest(download .. "getmodules",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk) --TODO: GET ALL MODULES WITH CORRECT URL
         pog:roll()
         tempTable = tempTable .. chunk
       end, 1000)
@@ -480,7 +480,7 @@ local function devMod(...)
         hash = {}
         for i=1,#tempTable,1 do
           local mee = ""
-          worked, errored = internet.rawRequest(tempTable[i],nil,nil,function(chunk)
+          worked, errored = internet.rawRequest(tempTable[i],nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk)
             pog:roll()
             mee = mee .. chunk
           end,1000)
@@ -898,7 +898,7 @@ local function finishSetup()
 end
 
 local function signInPage()
-  local updates, error = internet.request(download .. "getversions")
+  local updates, error = internet.request(download .. "getversions", nil, {["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
   if updates then
     for _, upd in pairs(ser.unserialize(updates).modules) do
       if settingTable.moduleVersions[upd.id] ~= upd.version then
