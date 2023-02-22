@@ -369,7 +369,7 @@ local function devMod(...)
       local listPageNumber2 = 0
       local previousPage2 = 0
 
-      local function updateLists()
+      local function updateLists() --FIXME: Fix button getting stuck red (bug?), and random crash back at home
         local leftSelect = pageMult * listPageNumber + displayList.selectedItem
         local rightSelect = pageMult * listPageNumber2 + downloadList.selectedItem
         displayList:removeChildren()
@@ -378,13 +378,13 @@ local function devMod(...)
         for i=pageMult * listPageNumber + 1,pageMult * listPageNumber + pageMult,1 do
           if bothArray[1][i] ~= nil then
             text = " "
-            if #bothArray[1][i].module.requirements ~= nil then
+            if #bothArray[1][i].module.requirements ~= 0 then
               text = text .. "#"
             end
-            if bothArray[1][i].hasDatabase ~= nil then
+            if bothArray[1][i].hasDatabase ~= false then
               text = text .. "%"
             end
-            if bothArray[1][i].hasServer ~= nil then
+            if bothArray[1][i].hasServer ~= false then
               text = text .. "@"
             end
             displayList:addItem(bothArray[1][i].module.name .. text)
@@ -398,13 +398,13 @@ local function devMod(...)
         for i=pageMult * listPageNumber2 + 1,pageMult * listPageNumber2 + pageMult,1 do
           if bothArray[2][i] ~= nil then
             text = " "
-            if #bothArray[2][i].module.requirements ~= nil then
+            if #bothArray[2][i].module.requirements ~= 0 then
               text = text .. "#"
             end
-            if bothArray[2][i].hasDatabase ~= nil then
+            if bothArray[2][i].hasDatabase ~= false then
               text = text .. "%"
             end
-            if bothArray[2][i].hasServer ~= nil then
+            if bothArray[2][i].hasServer ~= false then
               text = text .. "@"
             end
             downloadList:addItem(bothArray[2][i].module.name .. text)
