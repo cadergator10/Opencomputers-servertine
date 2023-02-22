@@ -10,6 +10,7 @@ local component = require("component")
 local gpu = component.gpu
 local event = require("event")
 local ser = require("serialization")
+local JSON = require("JSON")
 local uuid = require("uuid")
 local fs = require("Filesystem")
 local internet = require("Internet")
@@ -24,8 +25,10 @@ local loc = system.getLocalization(aRD .. "Localizations/")
 --------
 
 local workspace, window, menu, userTable, settingTable, modulesLayout, modules, permissions
-local addVarArray, updateButton
+local addVarArray, updateButton, moduleLabel
 local usernamename, userpasspass
+
+local dataBuffer --Progress saving of modules
 
 ----------
 
@@ -467,7 +470,7 @@ local function devMod(...)
       end, 1000)
       if worked then
         moduleTable = {}
-        tempTable = ser.unserialize(tempTable).modules
+        tempTable = JSON.decode(tempTable).modules
         --[[local res = tempTable --NO LONGER NEED DUE TO IT ALL BEING ON A WEBSITE
         tempTable = {}
         for _,k in ipairs(res) do --Check for duplicates inside of the external module list, so no 2 are downloaded together.
@@ -504,8 +507,8 @@ local function devMod(...)
         hash = {}
         bothArray = {}
         bothArray[1],bothArray[2] = {}, {}
-        for i=1,#moduleTable,1 do
-          moduleTable[i].module.requirements = split(moduleTable[i].module.requirements,",")
+        for i=1,#moduleTable,1 do --FIXME: Might be the crasher
+          moduleTable[i].module.requirements = moduleTable[i].module.requirements == nil and nil or split(moduleTable[i].module.requirements,",")
           table.insert(bothArray[1],moduleTable[i])
         end
         layout:addChild(GUI.label(2,2,1,1,style.listPageLabel,loc.available))
@@ -729,6 +732,14 @@ end
 
 local function runModule(module)
   window.modLayout:removeChildren()
+  modText = "ERROR GETTING NAME AND VERSION"
+  for _,vare in pairs(settingTable.moduleVersions) do
+    if vare.id == module.id then
+      modText = module.name .. " : Version " .. tostring(vare.version)
+      break
+    end
+  end
+  moduleLabel.text = modText
   module.onTouch()
   workspace:draw()
 end
@@ -790,6 +801,18 @@ workspace, window, menu = system.addWindow(GUI.filledWindow(2,2,150,45,style.win
 window.modLayout = window:addChild(GUI.container(14, 12, window.width - 14, window.height - 12)) --136 width, 33 height
 
 local function finishSetup()
+  local updates, error = internet.request(download .. "getversions", nil, {["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+  if updates then
+    updates = JSON.decode(updates).modules
+    for _, upd in pairs(updates) do
+      if settingTable.moduleVersions[upd.id] ~= nil and settingTable.moduleVersions[upd.id] ~= upd.version then
+        GUI.alert("Some modules are out of date")
+        break
+      end
+    end
+  else
+    GUI.alert("Error getting versions: " .. error)
+  end
   local dbstuff = {["update"] = function(table,force)
     if force or settingTable.autoupdate then
       updateServer(table)
@@ -804,7 +827,14 @@ local function finishSetup()
     else
       modem.broadcast(modemPort,data,data2)
     end
-  end, ["checkPerms"] = checkPerms}
+  end, ["checkPerms"] = checkPerms, ["dataBackup"] = function(id, data) --save module stuff temporarily
+    if data ~= nil then
+      dataBuffer[id] = data
+      return true
+    else
+      return dataBuffer[id]
+    end
+  end}
 
   window:addChild(GUI.panel(1,11,12,window.height - 11,style.listPanel))
   modulesLayout = window:addChild(GUI.list(2,12,10,window.height - 13,3,0,style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
@@ -812,44 +842,47 @@ local function finishSetup()
   if modulors == nil then modulors = {} end
   modules = {}
   table.insert(modulors,1,"dev")
-  for i = 1, #modulors do
-    if i == 1 then
-      local object = modulesLayout:addItem(modulors[i])
-      local success, result = pcall(devMod, workspace, window.modLayout, loc, dbstuff, style)
+
+  do --Contain dev module setup
+    local object = modulesLayout:addItem("dev")
+    local success, result = pcall(devMod, workspace, window.modLayout, loc, dbstuff, style)
+    if success then
+      result.id = 0
+      object.module = result
+      object.isDefault = true
+      object.onTouch = modulePress
+      result.debug = debug
+      table.insert(modules,result)
+    else
+      error("Failed to execute module " .. "dev" .. ": " .. tostring(result))
+    end
+  end
+
+  for i = 1, #settingTable.moduleVersions do
+    local result, reason = loadfile(modulesPath .. "modid" .. tostring(settingTable.moduleVersions[i].id) .. "/Main.lua")
+    if result then
+      local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style)
       if success then
+        local object = modulesLayout:addItem(result.name)
+        if online then
+          object.disabled = false
+        else
+          object.disabled = true
+        end
+        result.id = settingTable.moduleVersions[i].id
         object.module = result
-        object.isDefault = true
+        object.isDefault = false
         object.onTouch = modulePress
         result.debug = debug
         table.insert(modules,result)
-      else
-        error("Failed to execute module " .. modulors[i] .. ": " .. tostring(result))
-      end
-    else
-      local result, reason = loadfile(modulesPath .. modulors[i] .. "Main.lua")
-      if result then
-        local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style)
-        if success then
-          local object = modulesLayout:addItem(result.name)
-          if online then
-            object.disabled = false
-          else
-            object.disabled = true
-          end
-          object.module = result
-          object.isDefault = false
-          object.onTouch = modulePress
-          result.debug = debug
-          table.insert(modules,result)
-          for i=1,#result.table,1 do
-            table.insert(tableRay,result.table[i])
-          end
-        else
-          error("Failed to execute module " .. modulors[i] .. ": " .. tostring(result))
+        for i=1,#result.table,1 do
+          table.insert(tableRay,result.table[i])
         end
       else
-        error("Failed to load module " .. modulors[i] .. ": " .. tostring(reason))
+        error("Failed to execute module id " .. settingTable.moduleVersions[i].id .. ": " .. tostring(result))
       end
+    else
+      error("Failed to load module id " .. settingTable.moduleVersions[i].id .. ": " .. tostring(reason))
     end
   end
   if online then
@@ -888,6 +921,7 @@ local function finishSetup()
   else
     window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,"You are currently OFFLINE"))
   end
+  moduleLabel = window:addChild(GUI.label(66,7,3,1,style.cardStatusLabel,"No Module Selected"))
 
   if settingTable.autoupdate == false and online then
     updateButton = window:addChild(GUI.button(40,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.updateserver))
@@ -898,17 +932,6 @@ local function finishSetup()
 end
 
 local function signInPage()
-  local updates, error = internet.request(download .. "getversions", nil, {["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
-  if updates then
-    for _, upd in pairs(ser.unserialize(updates).modules) do
-      if settingTable.moduleVersions[upd.id] ~= upd.version then
-        GUI.alert("Some modules are out of date")
-        break
-      end
-    end
-  else
-    GUI.alert("Error getting versions: " .. error)
-  end
   local username = window.modLayout:addChild(GUI.input(30,3,16,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", "username"))
   local password = window.modLayout:addChild(GUI.input(30,6,16,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", "password",true,"*"))
   local submit = window.modLayout:addChild(GUI.button(30,9,16,1, style.passButton, style.passText, style.passSelectButton, style.passSelectText, "submit"))
