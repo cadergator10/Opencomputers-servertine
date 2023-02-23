@@ -508,7 +508,7 @@ local function devMod(...)
         bothArray = {}
         bothArray[1],bothArray[2] = {}, {}
         for i=1,#moduleTable,1 do --FIXME: Might be the crasher
-          moduleTable[i].module.requirements = moduleTable[i].module.requirements == nil and nil or split(moduleTable[i].module.requirements,",")
+          moduleTable[i].module.requirements = moduleTable[i].module.requirements == nil and {} or split(moduleTable[i].module.requirements,",")
           table.insert(bothArray[1],moduleTable[i])
         end
         layout:addChild(GUI.label(2,2,1,1,style.listPageLabel,loc.available))
