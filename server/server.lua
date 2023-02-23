@@ -578,14 +578,14 @@ while true do
           fs.remove(path .. "/modules")
           os.execute("mkdir modules")
           for j=1,#data,1 do
-            os.execute("mkdir modules/" .. data[j].folder)
-            if data.debug then
+            os.execute("mkdir modules/" .. "modid" .. tostring(data[j].module.id))
+            --[[if data.debug then
               os.execute ("wget -f " .. data[j].debug .. " modules/" .. data[j].folder .. "/Main.lua")
             else
               os.execute ("wget -f " .. data[j].main .. " modules/" .. data[j].folder .. "/Main.lua")
-            end
-            for i=1,#data[j].extras,1 do
-              os.execute("wget -f " .. data[j].extras[i].url .. " modules/" .. data[j].folder .. "/" .. data[j].extras[i].name)
+            end]]
+            for i=1,#data[j].files,1 do
+              os.execute("wget -f " .. data[j].files[i].url .. " modules/modid" .. tostring(data[j].module.id) .. "/" .. data[j].files[i].path)
             end
           end
           print("Finished downloading modules. Restart server")

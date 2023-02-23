@@ -33,7 +33,7 @@ local dataBuffer --Progress saving of modules
 ----------
 
 local prgName = loc.name
-local version = "v3.0.1"
+local version = "v4.0.0"
 
 local online = true
 local extraOff = false
@@ -528,7 +528,7 @@ local function devMod(...)
             for _,value in pairs(removeId) do
               local buffer = 0
               for j=1,#bothArray[1],1 do
-                if bothArray[1][j - buffer].module.id == tunumber(value) then
+                if bothArray[1][j - buffer].module.id == tonumber(value) then
                   local be = bothArray[1][j].module.requirements
                   table.insert(bothArray[2],bothArray[1][j])
                   table.remove(bothArray[1],j)
@@ -589,11 +589,11 @@ local function devMod(...)
           local serverMods = {}
           local dbMods = {}
           for _,value in pairs(bothArray[2]) do
-            if value.hasServer ~= nil then
-              table.insert(serverMods,value.server)
+            if value.hasServer == true then
+              table.insert(serverMods,value)
             end
-            if value.hasDatabase ~= nil then
-              table.insert(dbMods,value.database)
+            if value.hasDatabase == true then
+              table.insert(dbMods,value)
             end
           end
           serverMods.debug = false
@@ -611,6 +611,7 @@ local function devMod(...)
             for _, value in pairs(bothArray[2]) do --Save versions to check for updates
               settingTable.moduleVersions[value.module.id] = value.module.version
             end
+            saveTable(settingTable,aRD .. "dbsettings.txt")
             --After done with downloading
             pog.active = false
             GUI.alert(loc.moduledownloadsuccess)
@@ -732,7 +733,7 @@ end
 
 local function runModule(module)
   window.modLayout:removeChildren()
-  modText = "ERROR GETTING NAME AND VERSION"
+  modText = module.id ~= 0 and "ERROR GETTING NAME AND VERSION" or "DEV Module"
   for _,vare in pairs(settingTable.moduleVersions) do
     if vare.id == module.id then
       modText = module.name .. " : Version " .. tostring(vare.version)
