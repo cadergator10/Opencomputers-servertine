@@ -17,7 +17,7 @@ local version = "3.0.1"
 
 local serverModules = "https://raw.githubusercontent.com/cadergator10/opencomputer-security-system/main/src/server/modules/modules.txt"
 
-local commands = {"setdevice","signIn","updateuserlist","loginfo","getquery","syncport","moduleinstall", "devModeChange"}
+local commands = {"setdevice","signIn","updateuserlist","loginfo","getquery","syncport","moduleinstall", "devModeChange","settingUpdate"}
 local skipcrypt = {"loginfo","getquery","syncport"}
 
 local modules = {}
@@ -233,7 +233,7 @@ end
 
 local settingTable = loadTable("settings.txt")
 if settingTable == nil then
-  settingTable = {["cryptKey"]={1,2,3,4,5},["port"]=1000,["debug"]=false,["devMode"]=false}
+  settingTable = {["cryptKey"]={1,2,3,4,5},["port"]=1000,["debug"]=false,["devMode"]=false,["dbSettings"]={}}
   saveTable(settingTable,"settings.txt")
 end
 settingTable = loadTable("settings.txt")
@@ -248,6 +248,10 @@ if settingTable.port == nil then
 end
 if settingTable.devMode == nil then
   settingTable.devMode = false
+  saveTable(settingTable,"settings.txt")
+end
+if settingTable.dbSettings == nil then
+  settingTable.dbSettings = {}
   saveTable(settingTable,"settings.txt")
 end
 modemPort = settingTable.port
@@ -360,7 +364,7 @@ end,["copy"] = deepcopy,["send"]=function(direct,data,data2)
   bdcst(direct and from or nil,modemPort,data,data2)
 end,["modulemsg"]=function(command,data)
   return msgToModule("message",command,data,add)
-end,["print"]=function(msg)
+end,["print"]=function(msg) --print to screen using history
   if type(msg) == "table" then
     historyUpdate(msg[1].text,msg[1].color or 0xFFFFFF,false,msg[1].line or true)
     for i=2,#msg,1 do
@@ -369,6 +373,8 @@ end,["print"]=function(msg)
   else
     historyUpdate(msg,0xFFFFFF,false,true)
   end
+end,["configCheck"]=function(cfg) --Check module specific settings
+  return settingTable.dbSettings[cfg]
 end}
 
 for _,value in pairs(modules) do
@@ -638,6 +644,15 @@ while true do
           end
           settingTable.devMode = data.devMode
           saveTable(settingTable,"settings.txt")
+        end
+      elseif command == "settingUpdate" then --database settings broadcast here
+        data = ser.unserialize(data)
+        if data ~= nil then
+          bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(tostring(worked),settingTable.cryptKey))
+          settingTable.dbSettings = data
+          saveTable(settingTable,"settings.txt")
+        else
+          bdcst(from,port,crypt("false",settingTable.cryptKey))
         end
       elseif command == "checkPerms" then --Example with passes module & adding variables{["user"]="username",["command"]="check",["prefix"]="passes","addvar"} = checks both check.* and check.addvar and all
         data = ser.unserialize(data)

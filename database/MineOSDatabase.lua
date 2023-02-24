@@ -769,6 +769,18 @@ local function devMod(...)
           settingTable = addVarArray
           GUI.alert(loc.settingchangecompleted)
           updateServer()
+          local isUpdated = {}
+          for key,value in pairs(configBuffer) do
+            if value.server then
+              isUpdated[key] = settingTable[key]
+            end
+          end
+          local e,_,_,_,_,good = callModem(modemPort,"settingUpdate",crypt(ser.serialize(isUpdated),settingTable.cryptKey))
+          if e and crypt(good,settingTable.cryptKey,true) == "true" then
+            
+          else
+            GUI.alert("Database settings were not received by the server. Some settings might not be synced between the server and database")
+          end
         end
         saveTable(settingTable,aRD .. "dbsettings.txt")
         layout:removeChildren()
@@ -977,14 +989,33 @@ local function finishSetup()
 
   --Take all configBuffer objects, check for existance, and create if necessary
   local saveProg = false
+  local isServer = false
   for key,value in pairs(configBuffer) do
     if settingTable[key] == nil then
       settingTable[key] = value.default
       saveProg = true
+      if value.server == true then
+        isServer = true
+      end
     end
   end
   if saveProg then
-    saveTable(settingTable,"dbsettings.txt")
+    if isServer then
+      local isUpdated = {}
+      for key,value in pairs(configBuffer) do
+        if value.server then
+          isUpdated[key] = settingTable[key]
+        end
+      end
+      local e,_,_,_,_,good = callModem(modemPort,"settingUpdate",crypt(ser.serialize(isUpdated),settingTable.cryptKey))
+      if e and crypt(good,settingTable.cryptKey,true) == "true" then
+        saveTable(settingTable,"dbsettings.txt")
+      else
+        GUI.alert("Database settings were not received by the server. Please restart the server and try again")
+      end
+    else
+      saveTable(settingTable,"dbsettings.txt")
+    end
   end
 
   if online then
