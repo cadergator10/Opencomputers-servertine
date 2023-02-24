@@ -464,7 +464,7 @@ local function devMod(...)
       local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
       pog.active = true
       pog:roll()
-      local worked,errored = internet.rawRequest(download .. "getmodules",settingTable.devMode and "devmodules" or nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk) --TODO: TEST IF I CAN SEND PLAIN TEXT STRING HERE
+      local worked,errored = internet.rawRequest(download .. (settingTable.devMode and "getmodules/0" or "getmodules"),nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk) --TODO: TEST IF I CAN SEND PLAIN TEXT STRING HERE
         pog:roll()
         tempTable = tempTable .. chunk
       end, 1000)
@@ -604,7 +604,13 @@ local function devMod(...)
             for _,value in pairs(dbMods) do
               fs.makeDirectory(modulesPath .. "modid" .. tostring(value.module.id))
               for i=1,#value.files,1 do
-                internet.download(value.files[i].url,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
+                if value.files[i].serverModule == false then
+                  if settingTable.devMode == false then
+                    internet.download(value.files[i].url,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
+                  elseif value.files[i].devUrl ~= nil then
+                    internet.download(value.files[i].devUrl,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
+                  end
+                end
               end
             end
             settingTable.moduleVersions = {}
@@ -681,12 +687,12 @@ local function devMod(...)
           updateExtMods()
         end
       end]]
-      layout.addChild(GUI.label(1,10,1,1,style.containerLabel,"Developer"))
+      layout:addChild(GUI.label(1,10,1,1,style.containerLabel,"Developer"))
       local developerbutton = layout:addChild(GUI.button(15,4,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
       developerbutton.switchMode = true
       developerbutton.pressed = settingTable.devMode
       developerbutton.onTouch = function()
-        addVarArray.devMode = developerbutton.devMode
+        addVarArray.devMode = developerbutton.pressed
         if (addVarArray.devMode ~= addVarArray.devModePre) then
           GUI.alert("NOTICE: Changing developer mode will remove all modules installed on the database and server AND potentially lose any settings for modules! Having the mode enabled also installs the module creator's developer files which may be completely broken and/or crash the computer. Use ONLY if you are making a module and wish to test your program. Change back to not lose your currently installed modules")
         end
@@ -704,7 +710,9 @@ local function devMod(...)
         for i=1,#addVarArray.cryptKey,1 do
           addVarArray.cryptKey[i] = tonumber(addVarArray.cryptKey[i])
         end
+        local updateMeh = false
         if addVarArray.devMode ~= addVarArray.devModePre then
+          updateMeh = true
           local e,_,_,_,_,good = callModem(modemPort,"devModeChange",crypt(ser.serialize({["devMode"] = addVarArray.devMode}),settingTable.cryptKey))
           if e and crypt(good,settingTable.cryptKey,true) == "true" then --TEST: Does server backup and stuff
             addVarArray.devModePre = nil
@@ -724,7 +732,7 @@ local function devMod(...)
         end
         saveTable(settingTable,aRD .. "dbsettings.txt")
         layout:removeChildren()
-        if modemPort ~= addVarArray.port then
+        if modemPort ~= addVarArray.port or updateMeh then
           modem.close()
           modemPort = addVarArray.port
           modem.open(modemPort)
@@ -759,9 +767,9 @@ end
 local function runModule(module)
   window.modLayout:removeChildren()
   modText = module.id ~= 0 and "ERROR GETTING NAME AND VERSION" or "DEV Module"
-  for _,vare in pairs(settingTable.moduleVersions) do
-    if vare.id == module.id then
-      modText = module.name .. " : Version " .. tostring(vare.version)
+  for key,vare in pairs(settingTable.moduleVersions) do
+    if key == module.id then
+      modText = module.name .. " : Version " .. tostring(vare)
       break
     end
   end
@@ -951,7 +959,11 @@ local function finishSetup()
 
   --Database name and stuff and CardWriter
   window:addChild(GUI.panel(64,2,88,5,style.cardStatusPanel))
-  window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " | " .. version))
+  if settingTable.devMode == false then
+    window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " | " .. version))
+  else
+    window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " DEVELOPER MODE " .. " | " .. version))
+  end
   if online then
     window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,"Welcome " .. usernamename))
   else

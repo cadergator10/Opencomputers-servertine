@@ -17,7 +17,7 @@ local version = "3.0.1"
 
 local serverModules = "https://raw.githubusercontent.com/cadergator10/opencomputer-security-system/main/src/server/modules/modules.txt"
 
-local commands = {"setdevice","signIn","updateuserlist","loginfo","getquery","syncport","moduleinstall"}
+local commands = {"setdevice","signIn","updateuserlist","loginfo","getquery","syncport","moduleinstall", "devModeChange"}
 local skipcrypt = {"loginfo","getquery","syncport"}
 
 local modules = {}
@@ -589,10 +589,12 @@ while true do
               os.execute ("wget -f " .. data[j].main .. " modules/" .. data[j].folder .. "/Main.lua")
             end]]
             for i=1,#data[j].files,1 do
-              if settingTable.devMode == false then
-                os.execute("wget -f " .. data[j].files[i].url .. " modules/modid" .. tostring(data[j].module.id) .. "/" .. data[j].files[i].path)
-              elseif data[j].files[i].devUrl ~= nil then
-                os.execute("wget -f " .. data[j].files[i].devUrl .. " modules/modid" .. tostring(data[j].module.id) .. "/" .. data[j].files[i].path)
+              if data[j].files[i].serverModule == true then
+                if settingTable.devMode == false then
+                  os.execute("wget -f " .. data[j].files[i].url .. " modules/modid" .. tostring(data[j].module.id) .. "/" .. data[j].files[i].path)
+                elseif data[j].files[i].devUrl ~= nil then
+                  os.execute("wget -f " .. data[j].files[i].devUrl .. " modules/modid" .. tostring(data[j].module.id) .. "/" .. data[j].files[i].path)
+                end
               end
             end
           end
@@ -608,12 +610,14 @@ while true do
           dohistory = false
           evthread:kill()
           term.clear()
-          print("Developer mode has been set to " .. data.devMode)
+          print("Developer mode has been set to " .. tostring(data.devMode))
           if (data.devMode) then
             print("Backing up any settings") --IMAHERE
             saveTable({["devices"]=doorTable,["config"]=userTable},"normalModeBackup.txt")
             saveTable({},"deviceList.txt")
             saveTable({},"userList.txt")
+            print("Finished")
+            os.exit()
           else
             print("Returning last settings")
             local lastSettings = loadTable("normalModeBackup.txt")
@@ -626,6 +630,8 @@ while true do
               saveTable({},"deviceList.txt")
               saveTable({},"userList.txt")
             end
+            print("Finished")
+            os.exit()
           end
           settingTable.devMode = data.devMode
           saveTable(settingTable,"settings.txt")
