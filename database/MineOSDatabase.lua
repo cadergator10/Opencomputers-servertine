@@ -464,7 +464,7 @@ local function devMod(...)
       local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
       pog.active = true
       pog:roll()
-      local worked,errored = internet.rawRequest(download .. "getmodules",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk) --TODO: GET ALL MODULES WITH CORRECT URL
+      local worked,errored = internet.rawRequest(download .. "getmodules",settingTable.devMode and "devmodules" or nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk) --TODO: TEST IF I CAN SEND PLAIN TEXT STRING HERE
         pog:roll()
         tempTable = tempTable .. chunk
       end, 1000)
@@ -636,7 +636,7 @@ local function devMod(...)
       moduleInstallButton.disabled = true
       settingButton.disabled = true
 
-      addVarArray = {["cryptKey"]=settingTable.cryptKey,["style"]=settingTable.style,["autoupdate"]=settingTable.autoupdate,["externalModules"]=settingTable.externalModules,["port"]=settingTable.port}
+      addVarArray = {["cryptKey"]=settingTable.cryptKey,["style"]=settingTable.style,["autoupdate"]=settingTable.autoupdate,["port"]=settingTable.port,["devMode"]=settingTable.devMode,["devModePre"]=settingTable.devMode}
       layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"Style"))
       local styleEdit = layout:addChild(GUI.input(15,1,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       styleEdit.text = settingTable.style
@@ -681,6 +681,16 @@ local function devMod(...)
           updateExtMods()
         end
       end]]
+      layout.addChild(GUI.label(1,10,1,1,style.containerLabel,"Developer"))
+      local developerbutton = layout:addChild(GUI.button(15,4,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
+      developerbutton.switchMode = true
+      developerbutton.pressed = settingTable.devMode
+      developerbutton.onTouch = function()
+        addVarArray.devMode = developerbutton.devMode
+        if (addVarArray.devMode ~= addVarArray.devModePre) then
+          GUI.alert("NOTICE: Changing developer mode will remove all modules installed on the database and server AND potentially lose any settings for modules! Having the mode enabled also installs the module creator's developer files which may be completely broken and/or crash the computer. Use ONLY if you are making a module and wish to test your program. Change back to not lose your currently installed modules")
+        end
+      end
       layout:addChild(GUI.label(1,13,1,1,style.containerLabel,"Crypt Key"))
       local cryptInput = layout:addChild(GUI.input(15,13,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       local disString = tostring(addVarArray.cryptKey[1])
@@ -694,10 +704,25 @@ local function devMod(...)
         for i=1,#addVarArray.cryptKey,1 do
           addVarArray.cryptKey[i] = tonumber(addVarArray.cryptKey[i])
         end
-        settingTable = addVarArray
+        if addVarArray.devMode ~= addVarArray.devModePre then
+          local e,_,_,_,_,good = callModem(modemPort,"devModeChange",crypt(ser.serialize({["devMode"] = addVarArray.devMode}),settingTable.cryptKey))
+          if e and crypt(good,settingTable.cryptKey,true) == "true" then --TEST: Does server backup and stuff
+            addVarArray.devModePre = nil
+            settingTable = addVarArray
+            if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
+            saveTable({},aRD .. "userlist.txt")
+            --ISHERE
+            GUI.alert("Server has been successfully notified of the change, modules removed off of it, and settings backed up/restored/removed.")
+          else
+            GUI.alert("Server did not receive the message, and")
+          end
+        else
+          addVarArray.devModePre = nil
+          settingTable = addVarArray
+          GUI.alert(loc.settingchangecompleted)
+          updateServer()
+        end
         saveTable(settingTable,aRD .. "dbsettings.txt")
-        GUI.alert(loc.settingchangecompleted)
-        updateServer()
         layout:removeChildren()
         if modemPort ~= addVarArray.port then
           modem.close()
@@ -788,6 +813,14 @@ if settingTable.moduleVersions == nil then
   settingTable.moduleVersions = {}
   saveTable(settingTable,aRD .. "dbsettings.txt")
 end
+if settingTable.devMode == nil then --devMode has to do with installing modules. Causes you to install modules through the developer url setup by the creator
+  settingTable.devMode = false
+  saveTable(settingTable,aRD .. "dbsettings.txt")
+end
+
+if settingTable.devMode then
+  GUI.alert("Developer mode is enabled. DO NOT USE THIS UNLESS YOU ARE TESTING YOUR MODULES!")
+end
 
 modemPort = settingTable.port
 if modem.isOpen(modemPort) == false then
@@ -805,10 +838,12 @@ local function finishSetup()
   local updates, error = internet.request(download .. "getversions", nil, {["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
   if updates then
     updates = JSON.decode(updates).modules
-    for _, upd in pairs(updates) do
-      if settingTable.moduleVersions[upd.id] ~= nil and settingTable.moduleVersions[upd.id] ~= upd.version then
-        GUI.alert("Some modules are out of date")
-        break
+    if settingTable.devMode == false then --Disable version checking for developer mode
+      for _, upd in pairs(updates) do
+        if settingTable.moduleVersions[upd.id] ~= nil and settingTable.moduleVersions[upd.id] ~= upd.version then
+          GUI.alert("Some modules are out of date")
+          break
+        end
       end
     end
   else

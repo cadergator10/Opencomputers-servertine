@@ -233,7 +233,7 @@ end
 
 local settingTable = loadTable("settings.txt")
 if settingTable == nil then
-  settingTable = {["cryptKey"]={1,2,3,4,5},["port"]=1000,["debug"]=false}
+  settingTable = {["cryptKey"]={1,2,3,4,5},["port"]=1000,["debug"]=false,["devMode"]=false}
   saveTable(settingTable,"settings.txt")
 end
 settingTable = loadTable("settings.txt")
@@ -244,6 +244,10 @@ if settingTable.debug == nil then
 end
 if settingTable.port == nil then
   settingTable.port = 1000
+  saveTable(settingTable,"settings.txt")
+end
+if settingTable.devMode == nil then
+  settingTable.devMode = false
   saveTable(settingTable,"settings.txt")
 end
 modemPort = settingTable.port
@@ -585,13 +589,46 @@ while true do
               os.execute ("wget -f " .. data[j].main .. " modules/" .. data[j].folder .. "/Main.lua")
             end]]
             for i=1,#data[j].files,1 do
-              os.execute("wget -f " .. data[j].files[i].url .. " modules/modid" .. tostring(data[j].module.id) .. "/" .. data[j].files[i].path)
+              if settingTable.devMode == false then
+                os.execute("wget -f " .. data[j].files[i].url .. " modules/modid" .. tostring(data[j].module.id) .. "/" .. data[j].files[i].path)
+              elseif data[j].files[i].devUrl ~= nil then
+                os.execute("wget -f " .. data[j].files[i].devUrl .. " modules/modid" .. tostring(data[j].module.id) .. "/" .. data[j].files[i].path)
+              end
             end
           end
           print("Finished downloading modules. Restart server")
           os.exit()
         else
           bdcst(from,port,crypt("false",settingTable.cryptKey))
+        end
+      elseif command == "devModeChange" then --Remove all modules and save backups IF prev mode wasn't dev mode
+        data = ser.unserialize(data)
+        if data ~= nil and data.devMode ~= nil and settingTable.devMode ~= data.devMode then
+          bdcst(from,port,crypt("true",settingTable.cryptKey))
+          dohistory = false
+          evthread:kill()
+          term.clear()
+          print("Developer mode has been set to " .. data.devMode)
+          if (data.devMode) then
+            print("Backing up any settings") --IMAHERE
+            saveTable({["devices"]=doorTable,["config"]=userTable},"normalModeBackup.txt")
+            saveTable({},"deviceList.txt")
+            saveTable({},"userList.txt")
+          else
+            print("Returning last settings")
+            local lastSettings = loadTable("normalModeBackup.txt")
+            if lastSettings ~= nil then
+              print("Found settings backup")
+              saveTable(lastSettings.devices,"deviceList.txt")
+              saveTable(lastSettings.config,"userList.txt")
+            else
+              print("No settings backup found")
+              saveTable({},"deviceList.txt")
+              saveTable({},"userList.txt")
+            end
+          end
+          settingTable.devMode = data.devMode
+          saveTable(settingTable,"settings.txt")
         end
       elseif command == "checkPerms" then --Example with passes module & adding variables{["user"]="username",["command"]="check",["prefix"]="passes","addvar"} = checks both check.* and check.addvar and all
         data = ser.unserialize(data)
