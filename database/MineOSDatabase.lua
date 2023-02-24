@@ -29,6 +29,7 @@ local addVarArray, updateButton, moduleLabel
 local usernamename, userpasspass
 
 local dataBuffer --Progress saving of modules
+local configBuffer --All module's config options in database
 
 ----------
 
@@ -648,6 +649,9 @@ local function devMod(...)
       settingButton.disabled = true
 
       addVarArray = {["cryptKey"]=settingTable.cryptKey,["style"]=settingTable.style,["autoupdate"]=settingTable.autoupdate,["port"]=settingTable.port,["devMode"]=settingTable.devMode,["devModePre"]=settingTable.devMode}
+      for key,value in pairs(configBuffer) do
+        addVarArray[key] = value.default
+      end
       layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"Style"))
       local styleEdit = layout:addChild(GUI.input(15,1,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       styleEdit.text = settingTable.style
@@ -708,8 +712,40 @@ local function devMod(...)
       for i=2,#addVarArray.cryptKey,1 do
         disString = disString .. "," .. tostring(addVarArray.cryptKey[i])
       end
+
+      local dropInt = 16
+      local setRay = {}
+      for key,value in pairs(configBuffer) do
+        layout:addChild(GUI.label(1,dropInt,1,1,style.containerLabel,value.label))
+        if value.type == "bool" then
+          setRay[key] = layout:addChild(GUI.button(15,dropInt,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, "enable"))
+          setRay[key].switchMode = true
+          setRay[key].pressed = settingTable[key]
+          setRay[key].onTouch = function()
+            addVarArray[key] = setRay[key].pressed
+          end
+        elseif value.type == "int" then
+          setRay[key] = layout:addChild(GUI.input(15,dropInt,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
+          setRay[key].text = tostring(settingTable[key])
+          setRay[key].onInputFinished = function()
+            if (tonumber(setRay[key].text) ~= nil) then
+              addVarArray[key] = tonumber(setRay[key].text)
+            else
+              setRay[key].text = tostring(addVarArray[key])
+            end
+          end
+        else
+          setRay[key] = layout:addChild(GUI.input(15,dropInt,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
+          setRay[key].text = settingTable[key]
+          setRay[key].onInputFinished = function()
+            addVarArray[key] = setRay[key].text
+          end
+        end
+      end
+
+      
       cryptInput.text = disString
-      local acceptButton = layout:addChild(GUI.button(15,16,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.submit))
+      local acceptButton = layout:addChild(GUI.button(15,40,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.submit))
       acceptButton.onTouch = function()
         addVarArray.cryptKey = split(cryptInput.text,",")
         for i=1,#addVarArray.cryptKey,1 do
@@ -724,7 +760,6 @@ local function devMod(...)
             settingTable = addVarArray
             if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
             saveTable({},aRD .. "userlist.txt")
-            --ISHERE
             GUI.alert("Server has been successfully notified of the change, modules removed off of it, and settings backed up/restored/removed.")
           else
             GUI.alert("Server did not receive the message, and")
@@ -883,6 +918,8 @@ local function finishSetup()
     else
       return dataBuffer[id]
     end
+  end, ["checkConfig"] = function(cfg) --So users can check settings added to the dev settings module
+    return settingsTable[cfg]
   end}
 
   window:addChild(GUI.panel(1,11,12,window.height - 11,style.listPanel))
@@ -921,6 +958,11 @@ local function finishSetup()
         object.isDefault = false
         object.onTouch = modulePress
         result.debug = debug
+        if result.config ~= nil and #result.config > 0 then
+          for key,value in pairs(result.config) do
+            configBuffer[key] = value
+          end
+        end
         table.insert(modules,result)
         for i=1,#result.table,1 do
           table.insert(tableRay,result.table[i])
@@ -932,6 +974,19 @@ local function finishSetup()
       GUI.alert("Failed to load module in folder " .. modulors[i].. ": " .. tostring(reason))
     end
   end
+
+  --Take all configBuffer objects, check for existance, and create if necessary
+  local saveProg = false
+  for key,value in pairs(configBuffer) do
+    if settingTable[key] == nil then
+      settingTable[key] = value.default
+      saveProg = true
+    end
+  end
+  if saveProg then
+    saveTable(settingTable,"dbsettings.txt")
+  end
+
   if online then
     local check,_,_,_,_,work = callModem(modemPort,"getquery",ser.serialize(tableRay))
     if check then
