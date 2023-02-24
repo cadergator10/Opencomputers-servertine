@@ -464,7 +464,7 @@ local function devMod(...)
       local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
       pog.active = true
       pog:roll()
-      local worked,errored = internet.rawRequest(download .. (settingTable.devMode and "getmodules/0" or "getmodules"),nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk) --TODO: TEST IF I CAN SEND PLAIN TEXT STRING HERE
+      local worked,errored = internet.rawRequest(download .. (settingTable.devMode and "getmodules/0" or "getmodules"),nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk)
         pog:roll()
         tempTable = tempTable .. chunk
       end, 1000)
@@ -509,6 +509,11 @@ local function devMod(...)
         bothArray[1],bothArray[2] = {}, {}
         for i=1,#moduleTable,1 do --FIXME: Might be the crasher
           moduleTable[i].module.requirements = moduleTable[i].module.requirements == nil and {} or split(moduleTable[i].module.requirements,",")
+          if settingTable.devMode and #moduleTable[i].module.requirements > 0 then
+            for j = 1, j < #moduleTable[i].module.requirements,1 do
+              moduleTable[i].module.requirements[j] = tostring(tonumber(moduleTable[i].module.requirements[j]) + 1)
+            end
+          end
           table.insert(bothArray[1],moduleTable[i])
         end
         layout:addChild(GUI.label(2,2,1,1,style.listPageLabel,loc.available))
