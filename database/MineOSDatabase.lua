@@ -688,7 +688,7 @@ local function devMod(...)
         end
       end]]
       layout:addChild(GUI.label(1,10,1,1,style.containerLabel,"Developer"))
-      local developerbutton = layout:addChild(GUI.button(15,4,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
+      local developerbutton = layout:addChild(GUI.button(15,10,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
       developerbutton.switchMode = true
       developerbutton.pressed = settingTable.devMode
       developerbutton.onTouch = function()
@@ -902,8 +902,8 @@ local function finishSetup()
     end
   end
 
-  for i = 1, #settingTable.moduleVersions do
-    local result, reason = loadfile(modulesPath .. "modid" .. tostring(settingTable.moduleVersions[i].id) .. "/Main.lua")
+  for i = 1, #modulors do
+    local result, reason = loadfile(modulesPath .. modulors[i] .. "/Main.lua")
     if result then
       local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style)
       if success then
@@ -923,10 +923,10 @@ local function finishSetup()
           table.insert(tableRay,result.table[i])
         end
       else
-        error("Failed to execute module id " .. settingTable.moduleVersions[i].id .. ": " .. tostring(result))
+        error("Failed to execute module in folder " .. modulors[i] .. ": " .. tostring(result))
       end
     else
-      error("Failed to load module id " .. settingTable.moduleVersions[i].id .. ": " .. tostring(reason))
+      error("Failed to load module in folder " .. modulors[i].. ": " .. tostring(reason))
     end
   end
   if online then

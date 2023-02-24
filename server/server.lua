@@ -611,6 +611,9 @@ while true do
           evthread:kill()
           term.clear()
           print("Developer mode has been set to " .. tostring(data.devMode))
+          local path = shell.getWorkingDirectory()
+          fs.remove(path .. "/modules")
+          os.execute("mkdir modules")
           if (data.devMode) then
             print("Backing up any settings") --IMAHERE
             saveTable({["devices"]=doorTable,["config"]=userTable},"normalModeBackup.txt")
