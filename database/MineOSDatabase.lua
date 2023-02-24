@@ -885,7 +885,6 @@ local function finishSetup()
   local modulors = fs.list(modulesPath)
   if modulors == nil then modulors = {} end
   modules = {}
-  table.insert(modulors,1,"dev")
 
   do --Contain dev module setup
     local object = modulesLayout:addItem("dev")
@@ -898,7 +897,7 @@ local function finishSetup()
       result.debug = debug
       table.insert(modules,result)
     else
-      error("Failed to execute module " .. "dev" .. ": " .. tostring(result))
+      GUI.alert("Failed to execute module " .. "dev" .. ": " .. tostring(result))
     end
   end
 
@@ -913,7 +912,6 @@ local function finishSetup()
         else
           object.disabled = true
         end
-        result.id = settingTable.moduleVersions[i].id
         object.module = result
         object.isDefault = false
         object.onTouch = modulePress
@@ -923,10 +921,10 @@ local function finishSetup()
           table.insert(tableRay,result.table[i])
         end
       else
-        error("Failed to execute module in folder " .. modulors[i] .. ": " .. tostring(result))
+        GUI.alert("Failed to execute module in folder " .. modulors[i] .. ": " .. tostring(result))
       end
     else
-      error("Failed to load module in folder " .. modulors[i].. ": " .. tostring(reason))
+      GUI.alert("Failed to load module in folder " .. modulors[i].. ": " .. tostring(reason))
     end
   end
   if online then
