@@ -29,7 +29,7 @@ local addVarArray, updateButton, moduleLabel
 local usernamename, userpasspass
 
 local dataBuffer --Progress saving of modules
-local configBuffer --All module's config options in database
+local configBuffer = {} --All module's config options in database
 
 ----------
 
@@ -510,8 +510,8 @@ local function devMod(...)
         bothArray[1],bothArray[2] = {}, {}
         for i=1,#moduleTable,1 do --FIXME: Might be the crasher
           moduleTable[i].module.requirements = moduleTable[i].module.requirements == nil and {} or split(moduleTable[i].module.requirements,",")
-          if settingTable.devMode and #moduleTable[i].module.requirements > 0 then
-            for j = 1, j < #moduleTable[i].module.requirements,1 do
+          if moduleTable[i].module.requirements ~= nil and settingTable.devMode and #moduleTable[i].module.requirements > 0 then
+            for j = 1, #moduleTable[i].module.requirements,1 do
               moduleTable[i].module.requirements[j] = tostring(tonumber(moduleTable[i].module.requirements[j]) + 1)
             end
           end
@@ -966,6 +966,7 @@ local function finishSetup()
         else
           object.disabled = true
         end
+        result.id = tonumber(string.sub(modulors[i],6,-2))
         object.module = result
         object.isDefault = false
         object.onTouch = modulePress
