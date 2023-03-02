@@ -796,8 +796,8 @@ local function devMod(...)
         styleEdit.disabled = true
         portInput.disabled = false
         autoupdatebutton.disabled = true
-        addInput.disabled = true
-        remButton.disabled = true
+        --addInput.disabled = true
+        --remButton.disabled = true
       end
     end
     
@@ -818,7 +818,7 @@ end
 
 local function runModule(module)
   window.modLayout:removeChildren()
-  modText = module.id ~= 0 and "ERROR GETTING NAME AND VERSION" or "DEV Module"
+  local modText = module.id ~= 0 and "ERROR GETTING NAME AND VERSION" or "DEV Module"
   for key,vare in pairs(settingTable.moduleVersions) do
     if key == module.id then
       modText = module.name .. " : Version " .. tostring(vare)
@@ -931,7 +931,7 @@ local function finishSetup()
       return dataBuffer[id]
     end
   end, ["checkConfig"] = function(cfg) --So users can check settings added to the dev settings module
-    return settingsTable[cfg]
+    return settingTable[cfg]
   end}
 
   window:addChild(GUI.panel(1,11,12,window.height - 11,style.listPanel))
@@ -971,7 +971,7 @@ local function finishSetup()
         object.isDefault = false
         object.onTouch = modulePress
         result.debug = debug
-        if result.config ~= nil and #result.config > 0 then
+        if result.config ~= nil then
           for key,value in pairs(result.config) do
             configBuffer[key] = value
           end
