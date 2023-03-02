@@ -13,11 +13,11 @@ local process = require("process")
 local thread = require("thread")
 local keyboard = require("keyboard")
 
-local version = "3.0.1"
+local version = "4.0.0"
 
 local serverModules = "https://raw.githubusercontent.com/cadergator10/opencomputer-security-system/main/src/server/modules/modules.txt"
 
-local commands = {"setdevice","signIn","updateuserlist","loginfo","getquery","syncport","moduleinstall"}
+local commands = {"setdevice","signIn","updateuserlist","loginfo","getquery","syncport","moduleinstall", "devModeChange","settingUpdate"}
 local skipcrypt = {"loginfo","getquery","syncport"}
 
 local modules = {}
@@ -233,7 +233,7 @@ end
 
 local settingTable = loadTable("settings.txt")
 if settingTable == nil then
-  settingTable = {["cryptKey"]={1,2,3,4,5},["port"]=1000,["debug"]=false}
+  settingTable = {["cryptKey"]={1,2,3,4,5},["port"]=1000,["debug"]=false,["devMode"]=false,["dbSettings"]={}}
   saveTable(settingTable,"settings.txt")
 end
 settingTable = loadTable("settings.txt")
@@ -244,6 +244,14 @@ if settingTable.debug == nil then
 end
 if settingTable.port == nil then
   settingTable.port = 1000
+  saveTable(settingTable,"settings.txt")
+end
+if settingTable.devMode == nil then
+  settingTable.devMode = false
+  saveTable(settingTable,"settings.txt")
+end
+if settingTable.dbSettings == nil then
+  settingTable.dbSettings = {}
   saveTable(settingTable,"settings.txt")
 end
 modemPort = settingTable.port
@@ -356,7 +364,7 @@ end,["copy"] = deepcopy,["send"]=function(direct,data,data2)
   bdcst(direct and from or nil,modemPort,data,data2)
 end,["modulemsg"]=function(command,data)
   return msgToModule("message",command,data,add)
-end,["print"]=function(msg)
+end,["print"]=function(msg) --print to screen using history
   if type(msg) == "table" then
     historyUpdate(msg[1].text,msg[1].color or 0xFFFFFF,false,msg[1].line or true)
     for i=2,#msg,1 do
@@ -365,6 +373,8 @@ end,["print"]=function(msg)
   else
     historyUpdate(msg,0xFFFFFF,false,true)
   end
+end,["configCheck"]=function(cfg) --Check module specific settings
+  return settingTable.dbSettings[cfg]
 end}
 
 for _,value in pairs(modules) do
@@ -578,18 +588,69 @@ while true do
           fs.remove(path .. "/modules")
           os.execute("mkdir modules")
           for j=1,#data,1 do
-            os.execute("mkdir modules/" .. data[j].folder)
-            if data.debug then
+            os.execute("mkdir modules/" .. "modid" .. tostring(data[j].module.id))
+            --[[if data.debug then
               os.execute ("wget -f " .. data[j].debug .. " modules/" .. data[j].folder .. "/Main.lua")
             else
               os.execute ("wget -f " .. data[j].main .. " modules/" .. data[j].folder .. "/Main.lua")
-            end
-            for i=1,#data[j].extras,1 do
-              os.execute("wget -f " .. data[j].extras[i].url .. " modules/" .. data[j].folder .. "/" .. data[j].extras[i].name)
+            end]]
+            for i=1,#data[j].files,1 do
+              if data[j].files[i].serverModule == true then
+                if settingTable.devMode == false then
+                  os.execute("wget -f " .. data[j].files[i].url .. " modules/modid" .. tostring(data[j].module.id) .. "/" .. data[j].files[i].path)
+                elseif data[j].files[i].devUrl ~= nil then
+                  os.execute("wget -f " .. data[j].files[i].devUrl .. " modules/modid" .. tostring(data[j].module.id) .. "/" .. data[j].files[i].path)
+                end
+              end
             end
           end
           print("Finished downloading modules. Restart server")
           os.exit()
+        else
+          bdcst(from,port,crypt("false",settingTable.cryptKey))
+        end
+      elseif command == "devModeChange" then --Remove all modules and save backups IF prev mode wasn't dev mode
+        data = ser.unserialize(data)
+        if data ~= nil and data.devMode ~= nil and settingTable.devMode ~= data.devMode then
+          bdcst(from,port,crypt("true",settingTable.cryptKey))
+          dohistory = false
+          evthread:kill()
+          term.clear()
+          print("Developer mode has been set to " .. tostring(data.devMode))
+          local path = shell.getWorkingDirectory()
+          fs.remove(path .. "/modules")
+          os.execute("mkdir modules")
+          if (data.devMode) then
+            print("Backing up any settings") --IMAHERE
+            saveTable({["devices"]=doorTable,["config"]=userTable},"normalModeBackup.txt")
+            saveTable({},"deviceList.txt")
+            saveTable({},"userList.txt")
+            print("Finished")
+            os.exit()
+          else
+            print("Returning last settings")
+            local lastSettings = loadTable("normalModeBackup.txt")
+            if lastSettings ~= nil then
+              print("Found settings backup")
+              saveTable(lastSettings.devices,"deviceList.txt")
+              saveTable(lastSettings.config,"userList.txt")
+            else
+              print("No settings backup found")
+              saveTable({},"deviceList.txt")
+              saveTable({},"userList.txt")
+            end
+            print("Finished")
+            os.exit()
+          end
+          settingTable.devMode = data.devMode
+          saveTable(settingTable,"settings.txt")
+        end
+      elseif command == "settingUpdate" then --database settings broadcast here
+        data = ser.unserialize(data)
+        if data ~= nil then
+          bdcst(from,port,crypt("true",settingTable.cryptKey))
+          settingTable.dbSettings = data
+          saveTable(settingTable,"settings.txt")
         else
           bdcst(from,port,crypt("false",settingTable.cryptKey))
         end

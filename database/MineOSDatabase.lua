@@ -10,6 +10,7 @@ local component = require("component")
 local gpu = component.gpu
 local event = require("event")
 local ser = require("serialization")
+local JSON = require("JSON")
 local uuid = require("uuid")
 local fs = require("Filesystem")
 local internet = require("Internet")
@@ -24,13 +25,16 @@ local loc = system.getLocalization(aRD .. "Localizations/")
 --------
 
 local workspace, window, menu, userTable, settingTable, modulesLayout, modules, permissions
-local addVarArray, updateButton
+local addVarArray, updateButton, moduleLabel
 local usernamename, userpasspass
+
+local dataBuffer --Progress saving of modules
+local configBuffer = {} --All module's config options in database
 
 ----------
 
 local prgName = loc.name
-local version = "v3.0.1"
+local version = "v4.0.0"
 
 local online = true
 local extraOff = false
@@ -40,9 +44,9 @@ local modem
 local tableRay = {}
 local prevmod
 
-local download = "https://raw.githubusercontent.com/cadergator10/Opencomputers-serpentine/main/modules.txt"
+local download = "https://cadespc.com/servertine/modules/"
 local debug = false
-local moduleDownloadDebug = false
+--local moduleDownloadDebug = false
 
 
 if component.isAvailable("os_cardwriter") then
@@ -328,16 +332,16 @@ local function devMod(...)
           end
           addPerm.disabled = true
 
-          listNum = window:addChild(GUI.label(2,33,3,3,style.listPageLabel,tostring(listPageNumber + 1)))
-          listUp = window:addChild(GUI.button(8,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "+"))
+          listNum = layout:addChild(GUI.label(2,33,3,3,style.listPageLabel,tostring(listPageNumber + 1)))
+          listUp = layout:addChild(GUI.button(8,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "+"))
           listUp.onTouch, listUp.isPos, listUp.isListNum = pageCallback,true,1
-          listDown = window:addChild(GUI.button(12,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "-"))
+          listDown = layout:addChild(GUI.button(12,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "-"))
           listDown.onTouch, listDown.isPos, listDown.isListNum = pageCallback,false,1
 
-          listNum2 = window:addChild(GUI.label(41,33,3,3,style.listPageLabel,tostring(listPageNumber2 + 1)))
-          listUp2 = window:addChild(GUI.button(49,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "+"))
+          listNum2 = layout:addChild(GUI.label(41,33,3,3,style.listPageLabel,tostring(listPageNumber2 + 1)))
+          listUp2 = layout:addChild(GUI.button(49,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "+"))
           listUp2.onTouch, listUp2.isPos, listUp2.isListNum = pageCallback,true,2
-          listDown2 = window:addChild(GUI.button(53,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "-"))
+          listDown2 = layout:addChild(GUI.button(53,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "-"))
           listDown2.onTouch, listDown2.isPos, listDown2.isListNum = pageCallback,false,2
         else
           GUI.alert(loc.incorrectpermusergrab)
@@ -366,7 +370,7 @@ local function devMod(...)
       local listPageNumber2 = 0
       local previousPage2 = 0
 
-      local function updateLists()
+      local function updateLists() --FIXME: Fix button getting stuck red (bug?), and random crash back at home
         local leftSelect = pageMult * listPageNumber + displayList.selectedItem
         local rightSelect = pageMult * listPageNumber2 + downloadList.selectedItem
         displayList:removeChildren()
@@ -375,16 +379,16 @@ local function devMod(...)
         for i=pageMult * listPageNumber + 1,pageMult * listPageNumber + pageMult,1 do
           if bothArray[1][i] ~= nil then
             text = " "
-            if #bothArray[1][i].requirements ~= 0 then
+            if #bothArray[1][i].module.requirements ~= 0 then
               text = text .. "#"
             end
-            if bothArray[1][i].database ~= nil then
+            if bothArray[1][i].hasDatabase ~= false then
               text = text .. "%"
             end
-            if bothArray[1][i].server ~= nil then
+            if bothArray[1][i].hasServer ~= false then
               text = text .. "@"
             end
-            displayList:addItem(bothArray[1][i].name .. text)
+            displayList:addItem(bothArray[1][i].module.name .. text)
           end
         end
         if bothArray[1][1] == nil then
@@ -395,16 +399,16 @@ local function devMod(...)
         for i=pageMult * listPageNumber2 + 1,pageMult * listPageNumber2 + pageMult,1 do
           if bothArray[2][i] ~= nil then
             text = " "
-            if #bothArray[2][i].requirements ~= 0 then
+            if #bothArray[2][i].module.requirements ~= 0 then
               text = text .. "#"
             end
-            if bothArray[2][i].database ~= nil then
+            if bothArray[2][i].hasDatabase ~= false then
               text = text .. "%"
             end
-            if bothArray[2][i].server ~= nil then
+            if bothArray[2][i].hasServer ~= false then
               text = text .. "@"
             end
-            downloadList:addItem(bothArray[2][i].name .. text)
+            downloadList:addItem(bothArray[2][i].module.name .. text)
           end
         end
         if bothArray[2][1] == nil then
@@ -461,18 +465,14 @@ local function devMod(...)
       local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
       pog.active = true
       pog:roll()
-      local worked,errored = internet.rawRequest(download,nil,nil,function(chunk)
+      local worked,errored = internet.rawRequest(download .. (settingTable.devMode and "getmodules/0" or "getmodules"),nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk)
         pog:roll()
         tempTable = tempTable .. chunk
-      end, 100)
+      end, 1000)
       if worked then
         moduleTable = {}
-        tempTable = ser.unserialize(tempTable)
-        for _,value in pairs(settingTable.externalModules) do
-          pog:roll()
-          table.insert(tempTable,value)
-        end
-        local res = tempTable
+        tempTable = JSON.decode(tempTable).modules
+        --[[local res = tempTable --NO LONGER NEED DUE TO IT ALL BEING ON A WEBSITE
         tempTable = {}
         for _,k in ipairs(res) do --Check for duplicates inside of the external module list, so no 2 are downloaded together.
           pog:roll()
@@ -484,31 +484,37 @@ local function devMod(...)
         hash = {}
         for i=1,#tempTable,1 do
           local mee = ""
-          worked, errored = internet.rawRequest(tempTable[i],nil,nil,function(chunk)
+          worked, errored = internet.rawRequest(tempTable[i],nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk)
             pog:roll()
             mee = mee .. chunk
-          end,100)
+          end,1000)
           if worked then
             mee = ser.unserialize(mee)
             for i=1,#mee,1 do
               table.insert(moduleTable,mee[i])
             end
           end
-        end
-        res = moduleTable
-        moduleTable = {}
-        for _,k in ipairs(res) do
+        end]]
+        --res = tempTable
+        moduleTable = tempTable
+        --[[for _,k in ipairs(res) do
           pog:roll()
           if not hash[k.id] then
             table.insert(moduleTable,k)
             hash[k.id] = true
           end
-        end
+        end]]
         pog.active = false
         hash = {}
         bothArray = {}
         bothArray[1],bothArray[2] = {}, {}
-        for i=1,#moduleTable,1 do
+        for i=1,#moduleTable,1 do --FIXME: Might be the crasher
+          moduleTable[i].module.requirements = moduleTable[i].module.requirements == nil and {} or split(moduleTable[i].module.requirements,",")
+          if moduleTable[i].module.requirements ~= nil and settingTable.devMode and #moduleTable[i].module.requirements > 0 then
+            for j = 1, #moduleTable[i].module.requirements,1 do
+              moduleTable[i].module.requirements[j] = tostring(tonumber(moduleTable[i].module.requirements[j]) + 1)
+            end
+          end
           table.insert(bothArray[1],moduleTable[i])
         end
         layout:addChild(GUI.label(2,2,1,1,style.listPageLabel,loc.available))
@@ -522,14 +528,14 @@ local function devMod(...)
         moveRight.onTouch = function() --This area manages the moving of data between lists for downloading or removal/no download. More complex due to checking requirements (required files being downloaded as well or removing files that require the file being removed.)
           local i = pageMult * listPageNumber + displayList.selectedItem
           table.insert(bothArray[2],bothArray[1][i])
-          local removeId = bothArray[1][i].requirements
+          local removeId = bothArray[1][i].module.requirements
           table.remove(bothArray[1],i)
           local function removeRequirements(removeId)
             for _,value in pairs(removeId) do
               local buffer = 0
               for j=1,#bothArray[1],1 do
-                if bothArray[1][j - buffer].id == value then
-                  local be = bothArray[1][j].requirements
+                if bothArray[1][j - buffer].module.id == tonumber(value) then
+                  local be = bothArray[1][j].module.requirements
                   table.insert(bothArray[2],bothArray[1][j])
                   table.remove(bothArray[1],j)
                   buffer = buffer + 1
@@ -545,15 +551,15 @@ local function devMod(...)
         moveLeft.onTouch = function()
           local i = pageMult * listPageNumber2 + downloadList.selectedItem
           table.insert(bothArray[1],bothArray[2][i])
-          local backup = bothArray[2][i].id
+          local backup = bothArray[2][i].module.id
           table.remove(bothArray[2],i)
           local idList = {}
           local function removeRequirements(removeId)
             for j=1,#bothArray[2],1 do
-              for _,value in pairs(bothArray[2][j].requirements) do
-                if value == removeId then
-                  table.insert(idList,bothArray[2][j].id)
-                  removeRequirements(bothArray[2][j].id)
+              for _,value in pairs(bothArray[2][j].module.requirements) do
+                if tonumber(value) == removeId then
+                  table.insert(idList,bothArray[2][j].module.id)
+                  removeRequirements(bothArray[2][j].module.id)
                 end
               end
             end
@@ -562,7 +568,7 @@ local function devMod(...)
           for _,value in pairs(idList) do
             local buffer = 0
             for j=1,#bothArray[2],1 do
-              if bothArray[2][j - buffer].id == value then
+              if bothArray[2][j - buffer].module.id == value then
                 table.insert(bothArray[1],bothArray[2][j - buffer])
                 table.remove(bothArray[2],j - buffer)
                 buffer = buffer + 1
@@ -589,25 +595,35 @@ local function devMod(...)
           local serverMods = {}
           local dbMods = {}
           for _,value in pairs(bothArray[2]) do
-            if value.server ~= nil then
-              table.insert(serverMods,value.server)
+            if value.hasServer == true then
+              table.insert(serverMods,value)
             end
-            if value.database ~= nil then
-              table.insert(dbMods,value.database)
+            if value.hasDatabase == true then
+              table.insert(dbMods,value)
             end
           end
-          serverMods.debug = moduleDownloadDebug
+          serverMods.debug = false
           local e,_,_,_,_,good = callModem(modemPort,"moduleinstall",crypt(ser.serialize(serverMods),settingTable.cryptKey))
           if e and crypt(good,settingTable.cryptKey,true) == "true" then --TEST: Does this successfully install everything
             if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
             fs.makeDirectory(aRD .. "/Modules")
             for _,value in pairs(dbMods) do
-              fs.makeDirectory(modulesPath .. value.folder)
-              internet.download(moduleDownloadDebug and value.debug or value.main,modulesPath .. value.folder .. "/Main.lua")
-              for i=1,#value.extras,1 do
-                internet.download(value.extras[i].url,modulesPath .. value.folder .. "/" .. value.extras[i].name)
+              fs.makeDirectory(modulesPath .. "modid" .. tostring(value.module.id))
+              for i=1,#value.files,1 do
+                if value.files[i].serverModule == false then
+                  if settingTable.devMode == false then
+                    internet.download(value.files[i].url,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
+                  elseif value.files[i].devUrl ~= nil then
+                    internet.download(value.files[i].devUrl,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
+                  end
+                end
               end
             end
+            settingTable.moduleVersions = {}
+            for _, value in pairs(bothArray[2]) do --Save versions to check for updates
+              settingTable.moduleVersions[value.module.id] = value.module.version
+            end
+            saveTable(settingTable,aRD .. "dbsettings.txt")
             --After done with downloading
             pog.active = false
             GUI.alert(loc.moduledownloadsuccess)
@@ -632,27 +648,30 @@ local function devMod(...)
       moduleInstallButton.disabled = true
       settingButton.disabled = true
 
-      addVarArray = {["cryptKey"]=settingTable.cryptKey,["style"]=settingTable.style,["autoupdate"]=settingTable.autoupdate,["externalModules"]=settingTable.externalModules,["port"]=settingTable.port}
+      addVarArray = {["cryptKey"]=settingTable.cryptKey,["style"]=settingTable.style,["autoupdate"]=settingTable.autoupdate,["port"]=settingTable.port,["devMode"]=settingTable.devMode,["devModePre"]=settingTable.devMode}
+      for key,value in pairs(configBuffer) do
+        addVarArray[key] = value.default
+      end
       layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"Style"))
       local styleEdit = layout:addChild(GUI.input(15,1,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       styleEdit.text = settingTable.style
       styleEdit.onInputFinished = function()
         addVarArray.style = styleEdit.text
       end
-      layout:addChild(GUI.label(1,4,1,1,style.containerLabel,"Auto update"))
+      layout:addChild(GUI.label(1,3,1,1,style.containerLabel,"Auto update"))
       local autoupdatebutton = layout:addChild(GUI.button(15,4,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
       autoupdatebutton.switchMode = true
       autoupdatebutton.pressed = settingTable.autoupdate
       autoupdatebutton.onTouch = function()
         addVarArray.autoupdate = autoupdatebutton.pressed
       end
-      layout:addChild(GUI.label(1,7,1,1,style.containerLabel,"Port"))
+      layout:addChild(GUI.label(1,5,1,1,style.containerLabel,"Port"))
       local portInput = layout:addChild(GUI.input(15,7,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
       portInput.text = settingTable.port
       portInput.onInputFinished = function()
         addVarArray.port = tonumber(portInput.text)
       end
-      local extMod
+      --[[local extMod
       local function updateExtMods()
         extMod:clear()
         for _,value in pairs(addVarArray.externalModules) do
@@ -676,26 +695,97 @@ local function devMod(...)
           table.remove(addVarArray.externalModules,extMod.selectedItem)
           updateExtMods()
         end
+      end]]
+      layout:addChild(GUI.label(1,7,1,1,style.containerLabel,"Developer"))
+      local developerbutton = layout:addChild(GUI.button(15,10,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
+      developerbutton.switchMode = true
+      developerbutton.pressed = settingTable.devMode
+      developerbutton.onTouch = function()
+        addVarArray.devMode = developerbutton.pressed
+        if (addVarArray.devMode ~= addVarArray.devModePre) then
+          GUI.alert("NOTICE: Changing developer mode will remove all modules installed on the database and server AND potentially lose any settings for modules! Having the mode enabled also installs the module creator's developer files which may be completely broken and/or crash the computer. Use ONLY if you are making a module and wish to test your program. Change back to not lose your currently installed modules")
+        end
       end
-      layout:addChild(GUI.label(1,13,1,1,style.containerLabel,"Crypt Key"))
+      layout:addChild(GUI.label(1,9,1,1,style.containerLabel,"Crypt Key"))
       local cryptInput = layout:addChild(GUI.input(15,13,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       local disString = tostring(addVarArray.cryptKey[1])
       for i=2,#addVarArray.cryptKey,1 do
         disString = disString .. "," .. tostring(addVarArray.cryptKey[i])
       end
+
+      local dropInt = 11
+      local setRay = {}
+      for key,value in pairs(configBuffer) do
+        layout:addChild(GUI.label(1,dropInt,1,1,style.containerLabel,value.label))
+        if value.type == "bool" then
+          setRay[key] = layout:addChild(GUI.button(15,dropInt,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, "enable"))
+          setRay[key].switchMode = true
+          setRay[key].pressed = settingTable[key]
+          setRay[key].onTouch = function()
+            addVarArray[key] = setRay[key].pressed
+          end
+        elseif value.type == "int" then
+          setRay[key] = layout:addChild(GUI.input(15,dropInt,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
+          setRay[key].text = tostring(settingTable[key])
+          setRay[key].onInputFinished = function()
+            if (tonumber(setRay[key].text) ~= nil) then
+              addVarArray[key] = tonumber(setRay[key].text)
+            else
+              setRay[key].text = tostring(addVarArray[key])
+            end
+          end
+        else
+          setRay[key] = layout:addChild(GUI.input(15,dropInt,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
+          setRay[key].text = settingTable[key]
+          setRay[key].onInputFinished = function()
+            addVarArray[key] = setRay[key].text
+          end
+        end
+        dropInt = dropInt + 2
+      end
+
+      
       cryptInput.text = disString
-      local acceptButton = layout:addChild(GUI.button(15,16,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.submit))
+      local acceptButton = layout:addChild(GUI.button(15,dropInt,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.submit))
       acceptButton.onTouch = function()
         addVarArray.cryptKey = split(cryptInput.text,",")
         for i=1,#addVarArray.cryptKey,1 do
           addVarArray.cryptKey[i] = tonumber(addVarArray.cryptKey[i])
         end
-        settingTable = addVarArray
+        local updateMeh = false
+        if addVarArray.devMode ~= addVarArray.devModePre then
+          updateMeh = true
+          local e,_,_,_,_,good = callModem(modemPort,"devModeChange",crypt(ser.serialize({["devMode"] = addVarArray.devMode}),settingTable.cryptKey))
+          if e and crypt(good,settingTable.cryptKey,true) == "true" then --TEST: Does server backup and stuff
+            addVarArray.devModePre = nil
+            settingTable = addVarArray
+            if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
+            saveTable({},aRD .. "userlist.txt")
+            GUI.alert("Server has been successfully notified of the change, modules removed off of it, and settings backed up/restored/removed.")
+          else
+            GUI.alert("Server did not receive the message, and")
+          end
+        else
+          addVarArray.devModePre = nil
+          settingTable = addVarArray
+          GUI.alert(loc.settingchangecompleted)
+          local isUpdated = {}
+          for key,value in pairs(configBuffer) do
+            if value.server then
+              isUpdated[key] = settingTable[key]
+            end
+          end
+          local e,_,_,_,_,good = callModem(modemPort,"settingUpdate",crypt(ser.serialize(isUpdated),settingTable.cryptKey))
+          if e and crypt(good,settingTable.cryptKey,true) == "true" then
+            
+          else
+            GUI.alert("Database settings were not received by the server. Some settings might not be synced between the server and database")
+          end
+          updateServer()
+        end
         saveTable(settingTable,aRD .. "dbsettings.txt")
-        GUI.alert(loc.settingchangecompleted)
-        updateServer()
         layout:removeChildren()
-        if modemPort ~= addVarArray.port then
+        if modemPort ~= addVarArray.port or updateMeh then
           modem.close()
           modemPort = addVarArray.port
           modem.open(modemPort)
@@ -707,8 +797,8 @@ local function devMod(...)
         styleEdit.disabled = true
         portInput.disabled = false
         autoupdatebutton.disabled = true
-        addInput.disabled = true
-        remButton.disabled = true
+        --addInput.disabled = true
+        --remButton.disabled = true
       end
     end
     
@@ -729,6 +819,14 @@ end
 
 local function runModule(module)
   window.modLayout:removeChildren()
+  local modText = module.id ~= 0 and "ERROR GETTING NAME AND VERSION" or "DEV Module"
+  for key,vare in pairs(settingTable.moduleVersions) do
+    if key == module.id then
+      modText = module.name .. " : Version " .. tostring(vare)
+      break
+    end
+  end
+  moduleLabel.text = modText
   module.onTouch()
   workspace:draw()
 end
@@ -768,9 +866,21 @@ if settingTable.autoupdate == nil then
   settingTable.autoupdate = false
   saveTable(settingTable,aRD .. "dbsettings.txt")
 end
-if settingTable.externalModules == nil then
-  settingTable.externalModules = {}
+if settingTable.externalModules ~= nil then
+  settingTable.externalModules = nil
   saveTable(settingTable,aRD .. "dbsettings.txt")
+end
+if settingTable.moduleVersions == nil then
+  settingTable.moduleVersions = {}
+  saveTable(settingTable,aRD .. "dbsettings.txt")
+end
+if settingTable.devMode == nil then --devMode has to do with installing modules. Causes you to install modules through the developer url setup by the creator
+  settingTable.devMode = false
+  saveTable(settingTable,aRD .. "dbsettings.txt")
+end
+
+if settingTable.devMode then
+  GUI.alert("Developer mode is enabled. DO NOT USE THIS UNLESS YOU ARE TESTING YOUR MODULES!")
 end
 
 modemPort = settingTable.port
@@ -786,6 +896,20 @@ workspace, window, menu = system.addWindow(GUI.filledWindow(2,2,150,45,style.win
 window.modLayout = window:addChild(GUI.container(14, 12, window.width - 14, window.height - 12)) --136 width, 33 height
 
 local function finishSetup()
+  local updates, error = internet.request(download .. "getversions", nil, {["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+  if updates then
+    updates = JSON.decode(updates).modules
+    if settingTable.devMode == false then --Disable version checking for developer mode
+      for _, upd in pairs(updates) do
+        if settingTable.moduleVersions[upd.id] ~= nil and settingTable.moduleVersions[upd.id] ~= upd.version then
+          GUI.alert("Some modules are out of date")
+          break
+        end
+      end
+    end
+  else
+    GUI.alert("Error getting versions: " .. error)
+  end
   local dbstuff = {["update"] = function(table,force)
     if force or settingTable.autoupdate then
       updateServer(table)
@@ -800,54 +924,102 @@ local function finishSetup()
     else
       modem.broadcast(modemPort,data,data2)
     end
-  end, ["checkPerms"] = checkPerms}
+  end, ["checkPerms"] = checkPerms, ["dataBackup"] = function(id, data) --save module stuff temporarily
+    if data ~= nil then
+      dataBuffer[id] = data
+      return true
+    else
+      return dataBuffer[id]
+    end
+  end, ["checkConfig"] = function(cfg) --So users can check settings added to the dev settings module
+    return settingTable[cfg]
+  end}
 
   window:addChild(GUI.panel(1,11,12,window.height - 11,style.listPanel))
   modulesLayout = window:addChild(GUI.list(2,12,10,window.height - 13,3,0,style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
   local modulors = fs.list(modulesPath)
   if modulors == nil then modulors = {} end
   modules = {}
-  table.insert(modulors,1,"dev")
+
+  do --Contain dev module setup
+    local object = modulesLayout:addItem("dev")
+    local success, result = pcall(devMod, workspace, window.modLayout, loc, dbstuff, style)
+    if success then
+      result.id = 0
+      object.module = result
+      object.isDefault = true
+      object.onTouch = modulePress
+      result.debug = debug
+      table.insert(modules,result)
+    else
+      GUI.alert("Failed to execute module " .. "dev" .. ": " .. tostring(result))
+    end
+  end
+
   for i = 1, #modulors do
-    if i == 1 then
-      local object = modulesLayout:addItem(modulors[i])
-      local success, result = pcall(devMod, workspace, window.modLayout, loc, dbstuff, style)
+    local result, reason = loadfile(modulesPath .. modulors[i] .. "/Main.lua")
+    if result then
+      local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style)
       if success then
+        local object = modulesLayout:addItem(result.name)
+        if online then
+          object.disabled = false
+        else
+          object.disabled = true
+        end
+        result.id = tonumber(string.sub(modulors[i],6,-2))
         object.module = result
-        object.isDefault = true
+        object.isDefault = false
         object.onTouch = modulePress
         result.debug = debug
+        if result.config ~= nil then
+          for key,value in pairs(result.config) do
+            configBuffer[key] = value
+          end
+        end
         table.insert(modules,result)
-      else
-        error("Failed to execute module " .. modulors[i] .. ": " .. tostring(result))
-      end
-    else
-      local result, reason = loadfile(modulesPath .. modulors[i] .. "Main.lua")
-      if result then
-        local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style)
-        if success then
-          local object = modulesLayout:addItem(result.name)
-          if online then
-            object.disabled = false
-          else
-            object.disabled = true
-          end
-          object.module = result
-          object.isDefault = false
-          object.onTouch = modulePress
-          result.debug = debug
-          table.insert(modules,result)
-          for i=1,#result.table,1 do
-            table.insert(tableRay,result.table[i])
-          end
-        else
-          error("Failed to execute module " .. modulors[i] .. ": " .. tostring(result))
+        for i=1,#result.table,1 do
+          table.insert(tableRay,result.table[i])
         end
       else
-        error("Failed to load module " .. modulors[i] .. ": " .. tostring(reason))
+        GUI.alert("Failed to execute module in folder " .. modulors[i] .. ": " .. tostring(result))
+      end
+    else
+      GUI.alert("Failed to load module in folder " .. modulors[i].. ": " .. tostring(reason))
+    end
+  end
+
+  --Take all configBuffer objects, check for existance, and create if necessary
+  local saveProg = false
+  local isServer = false
+  for key,value in pairs(configBuffer) do
+    if settingTable[key] == nil then
+      settingTable[key] = value.default
+      saveProg = true
+      if value.server == true then
+        isServer = true
       end
     end
   end
+  if saveProg then
+    if isServer then
+      local isUpdated = {}
+      for key,value in pairs(configBuffer) do
+        if value.server then
+          isUpdated[key] = settingTable[key]
+        end
+      end
+      local e,_,_,_,_,good = callModem(modemPort,"settingUpdate",crypt(ser.serialize(isUpdated),settingTable.cryptKey))
+      if e and crypt(good,settingTable.cryptKey,true) == "true" then
+        saveTable(settingTable,"dbsettings.txt")
+      else
+        GUI.alert("Database settings were not received by the server. Please restart the server and try again")
+      end
+    else
+      saveTable(settingTable,"dbsettings.txt")
+    end
+  end
+
   if online then
     local check,_,_,_,_,work = callModem(modemPort,"getquery",ser.serialize(tableRay))
     if check then
@@ -878,12 +1050,17 @@ local function finishSetup()
 
   --Database name and stuff and CardWriter
   window:addChild(GUI.panel(64,2,88,5,style.cardStatusPanel))
-  window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " | " .. version))
+  if settingTable.devMode == false then
+    window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " | " .. version))
+  else
+    window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " DEVELOPER MODE " .. " | " .. version))
+  end
   if online then
     window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,"Welcome " .. usernamename))
   else
     window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,"You are currently OFFLINE"))
   end
+  moduleLabel = window:addChild(GUI.label(66,7,3,1,style.cardStatusLabel,"No Module Selected"))
 
   if settingTable.autoupdate == false and online then
     updateButton = window:addChild(GUI.button(40,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.updateserver))
