@@ -61,6 +61,13 @@ else
   GUI.alert(loc.modemalert)
   return
 end
+if component.isAvailable("internet") then
+
+else
+  GUI.alert("No internet card inserted")
+  return
+end
+
 
 -----------
 
@@ -430,37 +437,6 @@ local function devMod(...)
         end
         workspace:draw()
       end
-
-      --[[local function pageCallback(workspace,button)
-        local function canFresh()
-          updateList()
-        end
-        if button.isPos then
-          if button.isListNum == 1 then
-            if listPageNumber < #count/pageMult - 1 then
-              listPageNumber = listPageNumber + 1
-              canFresh()
-            end
-          else
-            if listPageNumber2 < #users[count[pageMult * listPageNumber + userList.selectedItem]]--[[.perms/pageMult - 1 then
-              listPageNumber2 = listPageNumber2 + 1
-              canFresh()
-            end
-          end
-        else
-          if button.isListNum == 1 then
-            if listPageNumber > 0 then
-              listPageNumber = listPageNumber - 1
-              canFresh()
-            end
-          else
-            if listPageNumber2 > 0 then
-              listPageNumber2 = listPageNumber2 - 1
-              canFresh()
-            end
-          end
-        end
-      end]]--TODO: Refactor pageChange function when enough modules come into play that it's important.
       local tempTable, hash = "", {}
       local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
       pog.active = true
@@ -472,38 +448,7 @@ local function devMod(...)
       if worked then
         moduleTable = {}
         tempTable = JSON.decode(tempTable).modules
-        --[[local res = tempTable --NO LONGER NEED DUE TO IT ALL BEING ON A WEBSITE
-        tempTable = {}
-        for _,k in ipairs(res) do --Check for duplicates inside of the external module list, so no 2 are downloaded together.
-          pog:roll()
-          if not hash[k] then
-            table.insert(tempTable,k)
-            hash[k] = true
-          end
-        end
-        hash = {}
-        for i=1,#tempTable,1 do
-          local mee = ""
-          worked, errored = internet.rawRequest(tempTable[i],nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk)
-            pog:roll()
-            mee = mee .. chunk
-          end,1000)
-          if worked then
-            mee = ser.unserialize(mee)
-            for i=1,#mee,1 do
-              table.insert(moduleTable,mee[i])
-            end
-          end
-        end]]
-        --res = tempTable
         moduleTable = tempTable
-        --[[for _,k in ipairs(res) do
-          pog:roll()
-          if not hash[k.id] then
-            table.insert(moduleTable,k)
-            hash[k.id] = true
-          end
-        end]]
         pog.active = false
         hash = {}
         bothArray = {}
@@ -671,31 +616,6 @@ local function devMod(...)
       portInput.onInputFinished = function()
         addVarArray.port = tonumber(portInput.text)
       end
-      --[[local extMod
-      local function updateExtMods()
-        extMod:clear()
-        for _,value in pairs(addVarArray.externalModules) do
-          extMod:addItem(value)
-        end
-      end
-      layout:addChild(GUI.label(1,10,1,1,style.containerLabel,"External modules"))
-      extMod = layout:addChild(GUI.comboBox(20,9,60,3,style.containerComboBack,style.containerComboText,style.containerComboArrowBack,style.containerComboArrowText))
-      updateExtMods()
-      local addInput = layout:addChild(GUI.input(80,10,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
-      addInput.onInputFinished = function()
-        if addInput.text ~= "" then
-          table.insert(addVarArray.externalModules,addInput.text)
-          addInput.text = ""
-          updateExtMods()
-        end
-      end
-      local remButton = layout:addChild(GUI.button(100,10,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, "remove external"))
-      remButton.onTouch = function()
-        if extMod:count() ~= 0 then
-          table.remove(addVarArray.externalModules,extMod.selectedItem)
-          updateExtMods()
-        end
-      end]]
       layout:addChild(GUI.label(1,7,1,1,style.containerLabel,"Developer"))
       local developerbutton = layout:addChild(GUI.button(15,10,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
       developerbutton.switchMode = true

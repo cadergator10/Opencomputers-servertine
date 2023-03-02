@@ -589,11 +589,6 @@ while true do
           os.execute("mkdir modules")
           for j=1,#data,1 do
             os.execute("mkdir modules/" .. "modid" .. tostring(data[j].module.id))
-            --[[if data.debug then
-              os.execute ("wget -f " .. data[j].debug .. " modules/" .. data[j].folder .. "/Main.lua")
-            else
-              os.execute ("wget -f " .. data[j].main .. " modules/" .. data[j].folder .. "/Main.lua")
-            end]]
             for i=1,#data[j].files,1 do
               if data[j].files[i].serverModule == true then
                 if settingTable.devMode == false then
