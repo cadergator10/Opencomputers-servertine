@@ -13,7 +13,7 @@ local process = require("process")
 local thread = require("thread")
 local keyboard = require("keyboard")
 
-local version = "3.0.1"
+local version = "4.0.0"
 
 local serverModules = "https://raw.githubusercontent.com/cadergator10/opencomputer-security-system/main/src/server/modules/modules.txt"
 
@@ -648,7 +648,7 @@ while true do
       elseif command == "settingUpdate" then --database settings broadcast here
         data = ser.unserialize(data)
         if data ~= nil then
-          bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(tostring(worked),settingTable.cryptKey))
+          bdcst(from,port,crypt("true",settingTable.cryptKey))
           settingTable.dbSettings = data
           saveTable(settingTable,"settings.txt")
         else

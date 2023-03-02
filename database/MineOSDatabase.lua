@@ -332,16 +332,16 @@ local function devMod(...)
           end
           addPerm.disabled = true
 
-          listNum = window:addChild(GUI.label(2,33,3,3,style.listPageLabel,tostring(listPageNumber + 1)))
-          listUp = window:addChild(GUI.button(8,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "+"))
+          listNum = layout:addChild(GUI.label(2,33,3,3,style.listPageLabel,tostring(listPageNumber + 1)))
+          listUp = layout:addChild(GUI.button(8,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "+"))
           listUp.onTouch, listUp.isPos, listUp.isListNum = pageCallback,true,1
-          listDown = window:addChild(GUI.button(12,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "-"))
+          listDown = layout:addChild(GUI.button(12,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "-"))
           listDown.onTouch, listDown.isPos, listDown.isListNum = pageCallback,false,1
 
-          listNum2 = window:addChild(GUI.label(41,33,3,3,style.listPageLabel,tostring(listPageNumber2 + 1)))
-          listUp2 = window:addChild(GUI.button(49,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "+"))
+          listNum2 = layout:addChild(GUI.label(41,33,3,3,style.listPageLabel,tostring(listPageNumber2 + 1)))
+          listUp2 = layout:addChild(GUI.button(49,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "+"))
           listUp2.onTouch, listUp2.isPos, listUp2.isListNum = pageCallback,true,2
-          listDown2 = window:addChild(GUI.button(53,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "-"))
+          listDown2 = layout:addChild(GUI.button(53,33,3,1, style.listPageButton, style.listPageText, style.listPageSelectButton, style.listPageSelectText, "-"))
           listDown2.onTouch, listDown2.isPos, listDown2.isListNum = pageCallback,false,2
         else
           GUI.alert(loc.incorrectpermusergrab)
@@ -658,14 +658,14 @@ local function devMod(...)
       styleEdit.onInputFinished = function()
         addVarArray.style = styleEdit.text
       end
-      layout:addChild(GUI.label(1,4,1,1,style.containerLabel,"Auto update"))
+      layout:addChild(GUI.label(1,3,1,1,style.containerLabel,"Auto update"))
       local autoupdatebutton = layout:addChild(GUI.button(15,4,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
       autoupdatebutton.switchMode = true
       autoupdatebutton.pressed = settingTable.autoupdate
       autoupdatebutton.onTouch = function()
         addVarArray.autoupdate = autoupdatebutton.pressed
       end
-      layout:addChild(GUI.label(1,7,1,1,style.containerLabel,"Port"))
+      layout:addChild(GUI.label(1,5,1,1,style.containerLabel,"Port"))
       local portInput = layout:addChild(GUI.input(15,7,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
       portInput.text = settingTable.port
       portInput.onInputFinished = function()
@@ -696,7 +696,7 @@ local function devMod(...)
           updateExtMods()
         end
       end]]
-      layout:addChild(GUI.label(1,10,1,1,style.containerLabel,"Developer"))
+      layout:addChild(GUI.label(1,7,1,1,style.containerLabel,"Developer"))
       local developerbutton = layout:addChild(GUI.button(15,10,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
       developerbutton.switchMode = true
       developerbutton.pressed = settingTable.devMode
@@ -706,14 +706,14 @@ local function devMod(...)
           GUI.alert("NOTICE: Changing developer mode will remove all modules installed on the database and server AND potentially lose any settings for modules! Having the mode enabled also installs the module creator's developer files which may be completely broken and/or crash the computer. Use ONLY if you are making a module and wish to test your program. Change back to not lose your currently installed modules")
         end
       end
-      layout:addChild(GUI.label(1,13,1,1,style.containerLabel,"Crypt Key"))
+      layout:addChild(GUI.label(1,9,1,1,style.containerLabel,"Crypt Key"))
       local cryptInput = layout:addChild(GUI.input(15,13,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       local disString = tostring(addVarArray.cryptKey[1])
       for i=2,#addVarArray.cryptKey,1 do
         disString = disString .. "," .. tostring(addVarArray.cryptKey[i])
       end
 
-      local dropInt = 16
+      local dropInt = 11
       local setRay = {}
       for key,value in pairs(configBuffer) do
         layout:addChild(GUI.label(1,dropInt,1,1,style.containerLabel,value.label))
@@ -741,11 +741,12 @@ local function devMod(...)
             addVarArray[key] = setRay[key].text
           end
         end
+        dropInt = dropInt + 2
       end
 
       
       cryptInput.text = disString
-      local acceptButton = layout:addChild(GUI.button(15,40,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.submit))
+      local acceptButton = layout:addChild(GUI.button(15,dropInt,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.submit))
       acceptButton.onTouch = function()
         addVarArray.cryptKey = split(cryptInput.text,",")
         for i=1,#addVarArray.cryptKey,1 do
@@ -768,7 +769,6 @@ local function devMod(...)
           addVarArray.devModePre = nil
           settingTable = addVarArray
           GUI.alert(loc.settingchangecompleted)
-          updateServer()
           local isUpdated = {}
           for key,value in pairs(configBuffer) do
             if value.server then
@@ -781,6 +781,7 @@ local function devMod(...)
           else
             GUI.alert("Database settings were not received by the server. Some settings might not be synced between the server and database")
           end
+          updateServer()
         end
         saveTable(settingTable,aRD .. "dbsettings.txt")
         layout:removeChildren()
