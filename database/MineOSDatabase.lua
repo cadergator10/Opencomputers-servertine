@@ -604,20 +604,20 @@ local function devMod(...)
         addVarArray.style = styleEdit.text
       end
       layout:addChild(GUI.label(1,3,1,1,style.containerLabel,"Auto update"))
-      local autoupdatebutton = layout:addChild(GUI.button(15,4,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
+      local autoupdatebutton = layout:addChild(GUI.button(15,3,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
       autoupdatebutton.switchMode = true
       autoupdatebutton.pressed = settingTable.autoupdate
       autoupdatebutton.onTouch = function()
         addVarArray.autoupdate = autoupdatebutton.pressed
       end
       layout:addChild(GUI.label(1,5,1,1,style.containerLabel,"Port"))
-      local portInput = layout:addChild(GUI.input(15,7,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
+      local portInput = layout:addChild(GUI.input(15,5,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
       portInput.text = settingTable.port
       portInput.onInputFinished = function()
         addVarArray.port = tonumber(portInput.text)
       end
       layout:addChild(GUI.label(1,7,1,1,style.containerLabel,"Developer"))
-      local developerbutton = layout:addChild(GUI.button(15,10,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
+      local developerbutton = layout:addChild(GUI.button(15,7,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
       developerbutton.switchMode = true
       developerbutton.pressed = settingTable.devMode
       developerbutton.onTouch = function()
@@ -627,7 +627,7 @@ local function devMod(...)
         end
       end
       layout:addChild(GUI.label(1,9,1,1,style.containerLabel,"Crypt Key"))
-      local cryptInput = layout:addChild(GUI.input(15,13,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
+      local cryptInput = layout:addChild(GUI.input(15,9,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       local disString = tostring(addVarArray.cryptKey[1])
       for i=2,#addVarArray.cryptKey,1 do
         disString = disString .. "," .. tostring(addVarArray.cryptKey[i])
