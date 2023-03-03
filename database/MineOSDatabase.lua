@@ -617,7 +617,7 @@ local function devMod(...)
         addVarArray.port = tonumber(portInput.text)
       end
       layout:addChild(GUI.label(1,7,1,1,style.containerLabel,"Developer"))
-      local developerbutton = layout:addChild(GUI.button(15,7,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
+      local developerbutton = layout:addChild(GUI.button(15,7,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.toggle))
       developerbutton.switchMode = true
       developerbutton.pressed = settingTable.devMode
       developerbutton.onTouch = function()
