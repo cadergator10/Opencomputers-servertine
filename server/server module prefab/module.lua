@@ -2,11 +2,11 @@ local settingstable = {}
 local doortable = {}
 local server = {}
 
-module = {}
+local module = {}
 module.name = "module test"
 module.commands = {"test"}
 module.skipcrypt = {"test"}
-module.table = {}
+module.table = {["test1"]={["worked"] = true}} --This will check if userList has test1 in it. If not, then it will set apples in the userList to the default, which is {["worked"] = true}
 module.debug = false
 function module.init(settings, doors, serverCommands) --Called when server is first started
   settingstable = settings
