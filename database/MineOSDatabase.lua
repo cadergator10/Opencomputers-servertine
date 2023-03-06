@@ -28,7 +28,7 @@ local workspace, window, menu, userTable, settingTable, modulesLayout, modules, 
 local addVarArray, updateButton, moduleLabel
 local usernamename, userpasspass
 
-local dataBuffer --Progress saving of modules
+local dataBuffer = {}--Progress saving of modules
 local configBuffer = {} --All module's config options in database
 
 ----------
