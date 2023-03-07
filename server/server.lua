@@ -511,7 +511,11 @@ while true do
       end
     end
 
-    if go then data = crypt(msg, settingTable.cryptKey, true) end
+    if go then
+      if msg ~= nil then
+        data = crypt(msg, settingTable.cryptKey, true) 
+      end
+    end
 
     if port == modemPort then
       if command == "updateuserlist" then --Receives a table of the parts of the table that need to be changed. Because it will do this instead of resetting the entire table, different devices won't mess with other device configurations.
