@@ -1,6 +1,6 @@
 --This program is aimed to provide an in-box way to put a computer anywhere in the world and have it work with the server (as long as its chunkloaded)
 --What this means is, instead of putting a modem in the door computer, you put the linked card in the doorcomputer and the other in a computer running this.
---This computer must have a modem (wired recommended plugged into a relay plugged into the server) and at least 1 linking card with no maximum.
+--This computer must have a modem (wired recommended plugged into a relay plugged into the server) and at least 1 linking card with no maximum. NOTICE: Wired modem Cannot use linking feature unless the device being linked has a linking card in it with a range extender on the same wired network.
 local component = require("component")
 local gpu = component.gpu
 local event = require("event")
