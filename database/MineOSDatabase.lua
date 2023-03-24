@@ -306,8 +306,8 @@ local function devMod(...)
           updateList()
           --local permissionInput, addPerm, deletePerm, users, addUser, deleteUser
           userInput = layout:addChild(GUI.input(80,1,30,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", loc.inputname))
-          passwordInput = layout:addChild(GUI.input(80,3,30,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", "input pass",true,"*"))
-          addUser = layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Add User"))
+          passwordInput = layout:addChild(GUI.input(80,3,30,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", loc.input .. " " .. loc.pass,true,"*"))
+          addUser = layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.add .. " " .. loc.user))
           addUser.onTouch = function()
             users[userInput.text] = {["pass"]=crypt(passwordInput.text,settingTable.cryptKey),["perms"]={}}
             modem.broadcast(modemPort,"signIn",crypt(ser.serialize({["command"]="update",["data"]=users}),settingTable.cryptKey))
@@ -315,15 +315,15 @@ local function devMod(...)
             passwordInput.text = ""
             updateList()
           end
-          deleteUser = layout:addChild(GUI.button(100,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Delete User"))
+          deleteUser = layout:addChild(GUI.button(100,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.delete .. " " .. loc.user))
           deleteUser.onTouch = function()
             users[userList:getItem(userList.selectedItem).text] = nil
             modem.broadcast(modemPort,"signIn",crypt(ser.serialize({["command"]="update",["data"]=users}),settingTable.cryptKey))
             updateList()
           end
           layout:addChild(GUI.panel(80,7,36,1,style.bottomDivider))
-          permissionInput = layout:addChild(GUI.input(80,9,30,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", "Input Perm"))
-          addPerm = layout:addChild(GUI.button(80,11,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Add Perm"))
+          permissionInput = layout:addChild(GUI.input(80,9,30,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", loc.input .. " " .. loc.perm))
+          addPerm = layout:addChild(GUI.button(80,11,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.add .. " " .. loc.perm))
           addPerm.onTouch = function()
             table.insert(users[userList:getItem(userList.selectedItem).text].perms,permissionInput.text)
             permissionInput.text = ""
@@ -331,7 +331,7 @@ local function devMod(...)
             updateUserStuff()
           end
           addPerm.disabled = true
-          deletePerm = layout:addChild(GUI.button(100,11,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Delete Perm"))
+          deletePerm = layout:addChild(GUI.button(100,11,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.delete .. " " .. loc.perm))
           deletePerm.onTouch = function()
             table.remove(users[userList:getItem(userList.selectedItem).text].perms,pageMult * listPageNumber2 + permissionList.selectedItem)
             modem.broadcast(modemPort,"signIn",crypt(ser.serialize({["command"]="update",["data"]=users}),settingTable.cryptKey))
@@ -597,36 +597,36 @@ local function devMod(...)
       for key,value in pairs(configBuffer) do
         addVarArray[key] = value.default
       end
-      layout:addChild(GUI.label(1,1,1,1,style.containerLabel,"Style"))
+      layout:addChild(GUI.label(1,1,1,1,style.containerLabel,loc.style))
       local styleEdit = layout:addChild(GUI.input(15,1,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       styleEdit.text = settingTable.style
       styleEdit.onInputFinished = function()
         addVarArray.style = styleEdit.text
       end
-      layout:addChild(GUI.label(1,3,1,1,style.containerLabel,"Auto update"))
+      layout:addChild(GUI.label(1,3,1,1,style.containerLabel,loc.autoupdate))
       local autoupdatebutton = layout:addChild(GUI.button(15,3,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.autoupdate))
       autoupdatebutton.switchMode = true
       autoupdatebutton.pressed = settingTable.autoupdate
       autoupdatebutton.onTouch = function()
         addVarArray.autoupdate = autoupdatebutton.pressed
       end
-      layout:addChild(GUI.label(1,5,1,1,style.containerLabel,"Port"))
+      layout:addChild(GUI.label(1,5,1,1,style.containerLabel,loc.port))
       local portInput = layout:addChild(GUI.input(15,5,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.inputtext))
       portInput.text = settingTable.port
       portInput.onInputFinished = function()
         addVarArray.port = tonumber(portInput.text)
       end
-      layout:addChild(GUI.label(1,7,1,1,style.containerLabel,"Developer"))
+      layout:addChild(GUI.label(1,7,1,1,style.containerLabel,loc.developer))
       local developerbutton = layout:addChild(GUI.button(15,7,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.toggle))
       developerbutton.switchMode = true
       developerbutton.pressed = settingTable.devMode
       developerbutton.onTouch = function()
         addVarArray.devMode = developerbutton.pressed
         if (addVarArray.devMode ~= addVarArray.devModePre) then
-          GUI.alert("NOTICE: Changing developer mode will remove all modules installed on the database and server AND potentially lose any settings for modules! Having the mode enabled also installs the module creator's developer files which may be completely broken and/or crash the computer. Use ONLY if you are making a module and wish to test your program. Change back to not lose your currently installed modules")
+          GUI.alert(loc.devmodealert)
         end
       end
-      layout:addChild(GUI.label(1,9,1,1,style.containerLabel,"Crypt Key"))
+      layout:addChild(GUI.label(1,9,1,1,style.containerLabel,loc.cryptkey))
       local cryptInput = layout:addChild(GUI.input(15,9,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
       local disString = tostring(addVarArray.cryptKey[1])
       for i=2,#addVarArray.cryptKey,1 do
@@ -638,7 +638,7 @@ local function devMod(...)
       for key,value in pairs(configBuffer) do
         layout:addChild(GUI.label(1,dropInt,1,1,style.containerLabel,value.label))
         if value.type == "bool" then
-          setRay[key] = layout:addChild(GUI.button(15,dropInt,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, "enable"))
+          setRay[key] = layout:addChild(GUI.button(15,dropInt,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.enable))
           setRay[key].switchMode = true
           setRay[key].pressed = settingTable[key]
           setRay[key].onTouch = function()
@@ -681,9 +681,9 @@ local function devMod(...)
             settingTable = addVarArray
             if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
             saveTable({},aRD .. "userlist.txt")
-            GUI.alert("Server has been successfully notified of the change, modules removed off of it, and settings backed up/restored/removed.")
+            GUI.alert(loc.serversuccess)
           else
-            GUI.alert("Server did not receive the message, and")
+            GUI.alert(loc.servermiss)
           end
         else
           addVarArray.devModePre = nil
@@ -699,7 +699,7 @@ local function devMod(...)
           if e and crypt(good,settingTable.cryptKey,true) == "true" then
             
           else
-            GUI.alert("Database settings were not received by the server. Some settings might not be synced between the server and database")
+            GUI.alert(loc.dbchangesmiss)
           end
           updateServer()
         end
@@ -723,9 +723,9 @@ local function devMod(...)
     end
     
     layout = window:addChild(GUI.container(20,1,window.width - 20, window.height))
-    userEditButton = window:addChild(GUI.button(3,3,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Edit Users"))
+    userEditButton = window:addChild(GUI.button(3,3,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.edit .. " " .. loc.users))
     userEditButton.onTouch = beginUserEditing
-    moduleInstallButton = window:addChild(GUI.button(3,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Manage Modules"))
+    moduleInstallButton = window:addChild(GUI.button(3,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.manage .. " " .. loc.modules))
     moduleInstallButton.onTouch = moduleInstallation
     settingButton = window:addChild(GUI.button(3,7,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.settingsvar))
     settingButton.onTouch = settingCallback
@@ -739,10 +739,10 @@ end
 
 local function runModule(module)
   window.modLayout:removeChildren()
-  local modText = module.id ~= 0 and "ERROR GETTING NAME AND VERSION" or "DEV Module"
+  local modText = module.id ~= 0 and loc.badversionerror or loc.devmodulename
   for key,vare in pairs(settingTable.moduleVersions) do
     if key == module.id then
-      modText = module.name .. " : Version " .. tostring(vare)
+      modText = module.name .. " : " .. loc.version .. " " .. tostring(vare)
       break
     end
   end
@@ -800,7 +800,7 @@ if settingTable.devMode == nil then --devMode has to do with installing modules.
 end
 
 if settingTable.devMode then
-  GUI.alert("Developer mode is enabled. DO NOT USE THIS UNLESS YOU ARE TESTING YOUR MODULES!")
+  GUI.alert(loc.devenabledalert)
 end
 
 modemPort = settingTable.port
@@ -828,7 +828,7 @@ local function finishSetup()
       end
     end
   else
-    GUI.alert("Error getting versions: " .. error)
+    GUI.alert(loc.versionalert .. ": " .. error)
   end
   local dbstuff = {["update"] = function(table,force)
     if force or settingTable.autoupdate then
@@ -872,7 +872,7 @@ local function finishSetup()
       result.debug = debug
       table.insert(modules,result)
     else
-      GUI.alert("Failed to execute module " .. "dev" .. ": " .. tostring(result))
+      GUI.alert(loc.failedexecute .. " " .. loc.module .. " " .. "dev" .. ": " .. tostring(result))
     end
   end
 
@@ -902,10 +902,10 @@ local function finishSetup()
           table.insert(tableRay,result.table[i])
         end
       else
-        GUI.alert("Failed to execute module in folder " .. modulors[i] .. ": " .. tostring(result))
+        GUI.alert(loc.failedexecute .. " " .. loc.module .. " " .. loc.infolder .. " " .. modulors[i] .. ": " .. tostring(result))
       end
     else
-      GUI.alert("Failed to load module in folder " .. modulors[i].. ": " .. tostring(reason))
+      GUI.alert(loc.failedload .. " " .. loc.module .. " " .. loc.infolder .. " " .. modulors[i].. ": " .. tostring(reason))
     end
   end
 
@@ -933,7 +933,7 @@ local function finishSetup()
       if e and crypt(good,settingTable.cryptKey,true) == "true" then
         saveTable(settingTable,"dbsettings.txt")
       else
-        GUI.alert("Database settings were not received by the server. Please restart the server and try again")
+        GUI.alert(loc.dbnotreceivedrestart)
       end
     else
       saveTable(settingTable,"dbsettings.txt")
@@ -950,7 +950,7 @@ local function finishSetup()
       GUI.alert(loc.userlistfailgrab)
       userTable = loadTable(aRD .. "userlist.txt")
       if userTable == nil then
-        GUI.alert("No userlist found")
+        GUI.alert(loc.nouserlistfound)
         window:remove()
       end
     end
@@ -973,14 +973,14 @@ local function finishSetup()
   if settingTable.devMode == false then
     window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " | " .. version))
   else
-    window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " DEVELOPER MODE " .. " | " .. version))
+    window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " " .. loc.developermode .. " " .. " | " .. version))
   end
   if online then
-    window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,"Welcome " .. usernamename))
+    window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,loc.welcome .. " " .. usernamename))
   else
-    window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,"You are currently OFFLINE"))
+    window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,loc.currentlyoffline))
   end
-  moduleLabel = window:addChild(GUI.label(66,7,3,1,style.cardStatusLabel,"No Module Selected"))
+  moduleLabel = window:addChild(GUI.label(66,7,3,1,style.cardStatusLabel,loc.no .. " " .. loc.module .. " " .. loc.selected))
 
   if settingTable.autoupdate == false and online then
     updateButton = window:addChild(GUI.button(40,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.updateserver))
@@ -991,10 +991,10 @@ local function finishSetup()
 end
 
 local function signInPage()
-  local username = window.modLayout:addChild(GUI.input(30,3,16,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", "username"))
-  local password = window.modLayout:addChild(GUI.input(30,6,16,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", "password",true,"*"))
-  local submit = window.modLayout:addChild(GUI.button(30,9,16,1, style.passButton, style.passText, style.passSelectButton, style.passSelectText, "submit"))
-  local offlineMode = window.modLayout:addChild(GUI.button(30,21,16,1, style.passButton, style.passText, style.passSelectButton, style.passSelectText, "offline mode"))
+  local username = window.modLayout:addChild(GUI.input(30,3,16,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", loc.username))
+  local password = window.modLayout:addChild(GUI.input(30,6,16,1, style.passInputBack,style.passInputText,style.passInputPlaceholder,style.passInputFocusBack,style.passInputFocusText, "", loc.password,true,"*"))
+  local submit = window.modLayout:addChild(GUI.button(30,9,16,1, style.passButton, style.passText, style.passSelectButton, style.passSelectText, loc.submit))
+  local offlineMode = window.modLayout:addChild(GUI.button(30,21,16,1, style.passButton, style.passText, style.passSelectButton, style.passSelectText, loc.offlinemode))
   submit.onTouch = function()
     local check, work
     check,_,_,_,_,work,permissions = callModem(modemPort,"signIn",crypt(ser.serialize({["command"]="signIn",["user"]=username.text,["pass"]=password.text}),settingTable.cryptKey))
@@ -1006,15 +1006,15 @@ local function signInPage()
         for _,value in pairs(pees) do --issue
           permissions[value] = true
         end
-        GUI.alert("Successfully signed in!")
+        GUI.alert(loc.signinsuccess)
         usernamename, userpasspass = username.text,password.text
         window.modLayout:removeChildren()
         finishSetup()
       else
-        GUI.alert("Incorrect username/password")
+        GUI.alert(loc.baduserpass)
       end
     else
-      GUI.alert("Failed to receive confirmatin from server")
+      GUI.alert(loc.noserverconfirm)
     end
   end
   offlineMode.onTouch = function()
