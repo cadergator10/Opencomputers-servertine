@@ -786,10 +786,10 @@ end
 
 style = compat.fs.readTable(stylePath .. settingTable.style)
 
-workspace, window, menu = compat.system.addWindow(GUI.filledWindow(2,2,150,45,style.windowFill))
+workspace, window, menu = compat.system.addWindow(style.windowFill) --FIX IT
 
 --window.modLayout = window:addChild(GUI.layout(14, 12, window.width - 14, window.height - 12, 1, 1))
-window.modLayout = window:addChild(GUI.container(14, 12, window.width - 14, window.height - 12)) --136 width, 33 height
+window.modLayout = window:addChild(GUI.container(14, 12, window.width - 14, window.height - 12)) --136 width, 33 height if MineOS / 146, 36 if OpenOS
 
 local function finishSetup()
   local updates, error = compat.internet.request(download .. "getversions", nil, {["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
@@ -939,7 +939,7 @@ local function finishSetup()
     modules[1].init(nil)
   end
 
-  local contextMenu = menu:addContextMenuItem("File")
+  local contextMenu = menu:addContextMenu("File")
   contextMenu:addItem("Close").onTouch = function()
     window:remove()
     workspace:stop()

@@ -9,7 +9,18 @@ local download = "https://cadespc.com/admin/server/getfiles"
 local config = compat.loadTable("bootconfig.txt")
 local term = not compat.isMine and require("term") or nil
 
-local openOSReq = {["JSON.lua"]="https://github.com/IgorTimofeev/MineOS/raw/master/Libraries/JSON.lua"}
+local openOSReq = {["JSON.lua"]="https://github.com/IgorTimofeev/MineOS/raw/master/Libraries/JSON.lua",["GUI.lua"]="https://github.com/IgorTimofeev/GUI/raw/master/GUI.lua",["advancedLua"]="https://github.com/IgorTimofeev/AdvancedLua/raw/master/AdvancedLua.lua",["color.lua"]="https://github.com/IgorTimofeev/Color/raw/master/Color.lua",["doubleBuffering.lua"]="https://github.com/IgorTimofeev/DoubleBuffering/raw/master/DoubleBuffering.lua",["image.lua"]="https://github.com/IgorTimofeev/Image/raw/master/Image.lua",["OCIF.lua"]="https://github.com/IgorTimofeev/Image/raw/master/OCIF.lua"}
+
+if not compat.isMine then --Should, if OpenOS, install all dependencies.
+    local status, _ = pcall(require,"GUI")
+    if not status then
+        for key,value in pairs(openOSReq) do
+            os.execute("wget -f " .. value .. " /lib/" .. key)
+        end
+        os.execute("mkdir /lib/FileFormat")
+        compat.internet.download("https://github.com/IgorTimofeev/Image/raw/master/OCIF.lua","/lib/FileFormat/OCIF.lua")
+    end
+end
 
 local arg = ...
 

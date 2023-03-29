@@ -163,15 +163,10 @@ function module.system.addWindow(style)
         return system.addWindow(GUI.filledWindow(2,2,150,45,style))
     else
         local work = GUI.application()
-        local window = work:addChild(GUI.container(1,1,workspace.width,workspace.height))
+        local window = work:addChild(GUI.container(1,1,work.width,work.height))
         window:addChild(GUI.panel(1,1,window.width,window.height,style))
-        return work, window, workspace:addChild(GUI.menu(1,1,workspace.width,0xEEEEEE, 0x666666,
-        0x3366CC, 0xFFFFFF)) --TODO: Check if legacy GUI works with this
+        return work, window, work:addChild(GUI.menu(1,1,work.width,0xEEEEEE, 0x666666, 0x3366CC, 0xFFFFFF)) --TODO: Check if legacy GUI works with this
     end
-end
-
-function module.JSON.decode()
-    --TODO: Figure out how I'll deal with this
 end
 
 return module
