@@ -438,18 +438,12 @@ local function devMod(...)
         workspace:draw()
       end
       local tempTable, hash = "", {}
-      local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
-      pog.active = true
-      pog:roll()
-      local worked,errored = internet.rawRequest(download .. (settingTable.devMode and "getmodules/0" or "getmodules"),nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk)
-        pog:roll()
-        tempTable = tempTable .. chunk
-      end, 1000)
+      local worked,errored = internet.request(download .. (settingTable.devMode and "getmodules/0" or "getmodules"),nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
       if worked then
+        tempTable = worked
         moduleTable = {}
         tempTable = JSON.decode(tempTable).modules
         moduleTable = tempTable
-        pog.active = false
         hash = {}
         bothArray = {}
         bothArray[1],bothArray[2] = {}, {}
@@ -535,7 +529,6 @@ local function devMod(...)
           moduleInstallButton.disabled = true
           modulesLayout:removeChildren()
           layout:addChild(GUI.label(2,15,3,3,style.listPageLabel,loc.downloading .. " " .. #bothArray[2] .. " " .. loc.modules .. ". " .. loc.downloadinginfo))
-          pog.active = true
           workspace:draw()
           local serverMods = {}
           local dbMods = {}
@@ -570,14 +563,15 @@ local function devMod(...)
             end
             saveTable(settingTable,aRD .. "dbsettings.txt")
             --After done with downloading
-            pog.active = false
             GUI.alert(loc.moduledownloadsuccess)
             window:removeChildren()
             window:remove()
+            workspace:stop()
           else
             GUI.alert(loc.sendservermodfail)
             window:removeChildren()
             window:remove()
+            workspace:stop()
           end
         end
         updateLists()
@@ -710,6 +704,7 @@ local function devMod(...)
           modemPort = addVarArray.port
           modem.open(modemPort)
           window:remove()
+          workspace:stop()
         end
         disabledSet()
       end
@@ -952,6 +947,7 @@ local function finishSetup()
       if userTable == nil then
         GUI.alert(loc.nouserlistfound)
         window:remove()
+        workspace:stop()
       end
     end
 
@@ -965,6 +961,7 @@ local function finishSetup()
   local contextMenu = menu:addContextMenuItem("File")
   contextMenu:addItem("Close").onTouch = function()
     window:remove()
+    workspace:stop()
     --os.exit()
   end
 
