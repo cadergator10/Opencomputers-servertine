@@ -1,7 +1,15 @@
 --The startup which checks for updates and whether it's using OpenOS or MineOS
-local compat = require("Compat")
+local status, compat = pcall(require,"Compat")
+if not status then --auto assume system is OpenOS because MineOS should autoinstall it
+    print("Installing Compatability layer")
+    os.execute("wget -f https://raw.githubusercontent.com/cadergator10/Opencomputers-serpentine/main/database/Compat.lua Compat.lua")
+    compat = require("Compat")
+end
+local download = "https://cadespc.com/admin/server/getfiles"
 local config = compat.loadTable("bootconfig.txt")
 local term = not compat.isMine and require("term") or nil
+
+local openOSReq = {["JSON.lua"]="https://github.com/IgorTimofeev/MineOS/raw/master/Libraries/JSON.lua"}
 
 local arg = ...
 
@@ -42,6 +50,16 @@ local function installer(version)
             end
         end
         if install then
+            local worked, errored = compat.internet.request(download,nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+            if worked then
+                local tempTable = JSON.decode(worked) --TODO: Make sure this matches json sent by the server
+                local aRD = compat.fs.path(compat.system.getCurrentScript())
+                for _, value in pairs(tempTable) do
+                    compat.internet.download(value.url,aRD .. value.path)
+                end
+            else
+                error("Failed to download files. Server may be down")
+            end
             --perform install
             return true
         elseif not isConfig then

@@ -14,13 +14,14 @@ local JSON = require("JSON")
 local uuid = require("uuid")
 local fs = require("Filesystem")
 local internet = require("Internet")
+local compat = require("Compat") --compatability layer so it all works between OpenOS and MineOS
 local writer
 
-local aRD = fs.path(system.getCurrentScript())
+local aRD = compat.fs.path(compat.system.getCurrentScript())
 local stylePath = aRD.."Styles/"
 local style = "default.lua"
 local modulesPath = aRD .. "Modules/"
-local loc = system.getLocalization(aRD .. "Localizations/")
+local loc = compat.system.getLocalization(aRD .. "Localizations/")
 
 --------
 
@@ -113,28 +114,12 @@ local function exportstring( s )
   s = string.gsub( s,string.char(26),"\"..string.char(26)..\"" )
   return s
 end
---// The Save Function
-local function saveTable(  tbl,filename )
-  local tableFile = fs.open(filename, "w")
-  tableFile:write(ser.serialize(tbl))
-  tableFile:close()
-end
-
---// The Load Function
-local function loadTable( sfile )
-  local tableFile = fs.open(sfile, "r")
-  if tableFile ~= nil then
-    return ser.unserialize(tableFile:readAll())
-  else
-    return nil
-  end
-end
 
 local function callModem(callPort,...) --Does it work?
   modem.broadcast(callPort,...)
   local e, _, from, port, _, msg,a,b,c,d,f,g,h
   repeat
-    e, a,b,c,d,f,g,h = event.pull(1)
+    e, a,b,c,d,f,g,h = compat.event.pull(1)
   until(e == "modem_message" or e == nil)
   if e == "modem_message" then
     return true,a,b,c,d,f,g,h
@@ -438,7 +423,7 @@ local function devMod(...)
         workspace:draw()
       end
       local tempTable, hash = "", {}
-      local worked,errored = internet.request(download .. (settingTable.devMode and "getmodules/0" or "getmodules"),nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+      local worked,errored = compat.internet.request(download .. (settingTable.devMode and "getmodules/0" or "getmodules"),nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
       if worked then
         tempTable = worked
         moduleTable = {}
@@ -550,9 +535,9 @@ local function devMod(...)
               for i=1,#value.files,1 do
                 if value.files[i].serverModule == false then
                   if settingTable.devMode == false then
-                    internet.download(value.files[i].url,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
+                    compat.internet.download(value.files[i].url,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
                   elseif value.files[i].devUrl ~= nil then
-                    internet.download(value.files[i].devUrl,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
+                    compat.internet.download(value.files[i].devUrl,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
                   end
                 end
               end
@@ -561,7 +546,7 @@ local function devMod(...)
             for _, value in pairs(bothArray[2]) do --Save versions to check for updates
               settingTable.moduleVersions[value.module.id] = value.module.version
             end
-            saveTable(settingTable,aRD .. "dbsettings.txt")
+            compat.saveTable(settingTable,aRD .. "dbsettings.txt")
             --After done with downloading
             GUI.alert(loc.moduledownloadsuccess)
             window:removeChildren()
@@ -674,7 +659,7 @@ local function devMod(...)
             addVarArray.devModePre = nil
             settingTable = addVarArray
             if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
-            saveTable({},aRD .. "userlist.txt")
+            compat.saveTable({},aRD .. "userlist.txt")
             GUI.alert(loc.serversuccess)
           else
             GUI.alert(loc.servermiss)
@@ -697,7 +682,7 @@ local function devMod(...)
           end
           updateServer()
         end
-        saveTable(settingTable,aRD .. "dbsettings.txt")
+        compat.saveTable(settingTable,aRD .. "dbsettings.txt")
         layout:removeChildren()
         if modemPort ~= addVarArray.port or updateMeh then
           modem.close()
@@ -760,7 +745,7 @@ local function modulePress()
 end
 
 ----------Setup GUI
-settingTable = loadTable(aRD .. "dbsettings.txt")
+settingTable = compat.loadTable(aRD .. "dbsettings.txt")
 if settingTable == nil then
   GUI.alert(loc.cryptalert)
   settingTable = {["cryptKey"]={1,2,3,4,5},["style"]="default.lua",["autoupdate"]=false,["port"]=1000,["externalModules"]={}}
@@ -770,28 +755,28 @@ if settingTable == nil then
     settingTable.port = tonumber(f)
   end
   modem.close(syncPort)
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
   online = false
 end
 if settingTable.style == nil then
   settingTable.style = "default.lua"
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 if settingTable.autoupdate == nil then
   settingTable.autoupdate = false
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 if settingTable.externalModules ~= nil then
   settingTable.externalModules = nil
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 if settingTable.moduleVersions == nil then
   settingTable.moduleVersions = {}
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 if settingTable.devMode == nil then --devMode has to do with installing modules. Causes you to install modules through the developer url setup by the creator
   settingTable.devMode = false
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 
 if settingTable.devMode then
@@ -803,15 +788,15 @@ if modem.isOpen(modemPort) == false then
   modem.open(modemPort)
 end
 
-style = fs.readTable(stylePath .. settingTable.style)
+style = compat.fs.readTable(stylePath .. settingTable.style)
 
-workspace, window, menu = system.addWindow(GUI.filledWindow(2,2,150,45,style.windowFill))
+workspace, window, menu = compat.system.addWindow(GUI.filledWindow(2,2,150,45,style.windowFill))
 
 --window.modLayout = window:addChild(GUI.layout(14, 12, window.width - 14, window.height - 12, 1, 1))
 window.modLayout = window:addChild(GUI.container(14, 12, window.width - 14, window.height - 12)) --136 width, 33 height
 
 local function finishSetup()
-  local updates, error = internet.request(download .. "getversions", nil, {["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+  local updates, error = compat.internet.request(download .. "getversions", nil, {["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
   if updates then
     updates = JSON.decode(updates).modules
     if settingTable.devMode == false then --Disable version checking for developer mode
@@ -830,7 +815,7 @@ local function finishSetup()
       updateServer(table)
     end
   end, ["save"] = function()
-    saveTable(userTable,"userlist.txt")
+    compat.saveTable(userTable,"userlist.txt")
   end, ["crypt"]=function(str,reverse)
     return crypt(str,settingTable.cryptKey,reverse)
   end, ["send"]=function(wait,data,data2)
@@ -858,7 +843,7 @@ local function finishSetup()
 
   do --Contain dev module setup
     local object = modulesLayout:addItem("dev")
-    local success, result = pcall(devMod, workspace, window.modLayout, loc, dbstuff, style)
+    local success, result = pcall(devMod, workspace, window.modLayout, loc, dbstuff, style, compat)
     if success then
       result.id = 0
       object.module = result
@@ -874,7 +859,7 @@ local function finishSetup()
   for i = 1, #modulors do
     local result, reason = loadfile(modulesPath .. modulors[i] .. "/Main.lua")
     if result then
-      local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style)
+      local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style, compat)
       if success then
         local object = modulesLayout:addItem(result.name)
         if online then
@@ -926,12 +911,12 @@ local function finishSetup()
       end
       local e,_,_,_,_,good = callModem(modemPort,"settingUpdate",crypt(ser.serialize(isUpdated),settingTable.cryptKey))
       if e and crypt(good,settingTable.cryptKey,true) == "true" then
-        saveTable(settingTable,"dbsettings.txt")
+        compat.saveTable(settingTable,"dbsettings.txt")
       else
         GUI.alert(loc.dbnotreceivedrestart)
       end
     else
-      saveTable(settingTable,"dbsettings.txt")
+      compat.saveTable(settingTable,"dbsettings.txt")
     end
   end
 
@@ -939,11 +924,11 @@ local function finishSetup()
     local check,_,_,_,_,work = callModem(modemPort,"getquery",ser.serialize(tableRay))
     if check then
       work = ser.unserialize(crypt(work,settingTable.cryptKey,true))
-      saveTable(work.data,aRD .. "userlist.txt")
+      compat.saveTable(work.data,aRD .. "userlist.txt")
       userTable = work.data
     else
       GUI.alert(loc.userlistfailgrab)
-      userTable = loadTable(aRD .. "userlist.txt")
+      userTable = compat.loadTable(aRD .. "userlist.txt")
       if userTable == nil then
         GUI.alert(loc.nouserlistfound)
         window:remove()
