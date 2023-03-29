@@ -4,7 +4,6 @@ local module = {["system"]={},["fs"]={},["event"]={},["internet"]={}}
 
 local component = require("component")
 local gpu = component.gpu
-local modem = component.modem
 
 local GUI = require("GUI")
 local ser = require("serialization")
@@ -22,12 +21,12 @@ if not status then
     system = require("shell")
     internet = component.internet
     process = require("process")
+    io = require("io")
 else
     event = require("event")
     fs = require("Filesystem")
     internet = require("Internet")
     json = require("JSON")
-    io = require("io")
     system = lfs
     lfs = nil
 end
@@ -67,6 +66,42 @@ function module.fs.path(path)
         return fs.path(path)
     else
         return fs.path(path)
+    end
+end
+
+function module.fs.isDirectory(path)
+    if module.isMine then
+        return fs.isDirectory(path)
+    else
+        return fs.isDirectory(path)
+    end
+end
+
+function module.fs.remove(path)
+    if module.isMine then
+        return fs.remove(path)
+    else
+        return fs.remove(path)
+    end
+end
+
+function module.fs.list(path)
+    if module.isMine then
+        return fs.list(path)
+    else
+        local tempTable = {}
+        for file in fs.list(path) do
+            table.insert(tempTable,file)
+        end
+        return #tempTable > 0 and tempTable or nil
+    end
+end
+
+function module.fs.makeDirectory(path)
+    if module.isMine then
+        return fs.makeDirectory(path)
+    else
+        return fs.makeDirectory(path)
     end
 end
 

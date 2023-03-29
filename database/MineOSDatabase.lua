@@ -1,5 +1,4 @@
 local GUI = require("GUI")
-local system = require("System")
 local modemPort = 1000
 local syncPort = 199
 local dbPort = 180
@@ -8,12 +7,9 @@ local adminCard = "admincard"
 
 local component = require("component")
 local gpu = component.gpu
-local event = require("event")
 local ser = require("serialization")
 local JSON = require("JSON")
 local uuid = require("uuid")
-local fs = require("Filesystem")
-local internet = require("Internet")
 local compat = require("Compat") --compatability layer so it all works between OpenOS and MineOS
 local writer
 
@@ -528,10 +524,10 @@ local function devMod(...)
           serverMods.debug = false
           local e,_,_,_,_,good = callModem(modemPort,"moduleinstall",crypt(ser.serialize(serverMods),settingTable.cryptKey))
           if e and crypt(good,settingTable.cryptKey,true) == "true" then --TEST: Does this successfully install everything
-            if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
-            fs.makeDirectory(aRD .. "/Modules")
+            if compat.fs.isDirectory(aRD .. "/Modules") then compat.fs.remove(aRD .. "/Modules") end
+            compat.fs.makeDirectory(aRD .. "/Modules")
             for _,value in pairs(dbMods) do
-              fs.makeDirectory(modulesPath .. "modid" .. tostring(value.module.id))
+              compat.fs.makeDirectory(modulesPath .. "modid" .. tostring(value.module.id))
               for i=1,#value.files,1 do
                 if value.files[i].serverModule == false then
                   if settingTable.devMode == false then
@@ -658,7 +654,7 @@ local function devMod(...)
           if e and crypt(good,settingTable.cryptKey,true) == "true" then --TEST: Does server backup and stuff
             addVarArray.devModePre = nil
             settingTable = addVarArray
-            if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
+            if compat.fs.isDirectory(aRD .. "/Modules") then compat.fs.remove(aRD .. "/Modules") end
             compat.saveTable({},aRD .. "userlist.txt")
             GUI.alert(loc.serversuccess)
           else
@@ -837,7 +833,7 @@ local function finishSetup()
 
   window:addChild(GUI.panel(1,11,12,window.height - 11,style.listPanel))
   modulesLayout = window:addChild(GUI.list(2,12,10,window.height - 13,3,0,style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
-  local modulors = fs.list(modulesPath)
+  local modulors = compat.fs.list(modulesPath)
   if modulors == nil then modulors = {} end
   modules = {}
 
