@@ -133,7 +133,11 @@ function module.internet.request(url,postData,headers,method)
     if module.isMine then
         return internet.request(url,postData,headers,method)
     else
-        return internet.request(url,postData,headers,method)
+        local text = ""
+        for chunk in internet.request(url,postData,headers,method) do
+            text = text .. chunk
+        end
+        return text
     end
 end
 
@@ -141,7 +145,10 @@ function module.internet.download(url,path)
     if module.isMine then
         return internet.download(url,path)
     else
-        local file = internet.request(url,nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+        local file = ""
+        for chunk in internet.request(url,nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"}) do
+            file = file .. chunk
+        end
         local tableFile = assert(io.open(path, "w"))
         tableFile:write(ser.serialize(tbl))
         tableFile:close()
