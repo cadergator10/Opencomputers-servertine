@@ -5,7 +5,7 @@ local module = {["system"]={},["fs"]={},["event"]={},["internet"]={}}
 local component = require("component")
 local gpu = component.gpu
 
-local guiGood, GUI = pcall(require,"GUI")
+local guiGood, GUI = pcall(require,"GUI") --In case GUI hasn't been installed yet (by boot)
 local ser = require("serialization")
 local uuid = require("uuid")
 
