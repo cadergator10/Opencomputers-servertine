@@ -5,7 +5,7 @@ if not status then --auto assume system is OpenOS because MineOS should autoinst
     os.execute("wget -f https://raw.githubusercontent.com/cadergator10/Opencomputers-serpentine/main/database/Compat.lua Compat.lua")
     compat = require("Compat")
 end
-local download = "https://cadespc.com/admin/server/getfiles"
+local download = "https://cadespc.com/servertine/modules/getservertine"
 local config = compat.loadTable("bootconfig.txt")
 local term = not compat.isMine and require("term") or nil
 
@@ -22,17 +22,20 @@ if not compat.isMine then --Should, if OpenOS, install all dependencies.
     end
 end
 
+local GUI = require("GUI")
+
 local arg = ...
 
 local function installer(version)
     if compat.isMine then
-        compat.system.addWindow(0xE1E1E1)
+        --TODO: Debug if OpenOS version works, then create MineOS one
+        --compat.system.addWindow(0xE1E1E1)
     else
         term.clear()
         local install = false
         local isConfig = config == nil
         if config == nil then
-            config = {["version"] = -1,["checkVersion"]=true}
+            config = {["version"] = -1,["checkVersion"]=true,["lang"]="English"}
             compat.saveTable(config,"bootconfig.txt")
             print("New system: Installing servertine")
             install = true
@@ -61,13 +64,17 @@ local function installer(version)
             end
         end
         if install then
-            local worked, errored = compat.internet.request(download,nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+            local worked, errored = compat.internet.request(download .. "files",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
             if worked then
                 local tempTable = JSON.decode(worked) --TODO: Make sure this matches json sent by the server
                 local aRD = compat.fs.path(compat.system.getCurrentScript())
-                for _, value in pairs(tempTable) do
-                    compat.internet.download(value.url,aRD .. value.path)
+                for _, value in pairs(tempTable.files) do
+                    if value.type == "db" then
+                        compat.internet.download(value.url,aRD .. value.path)
+                    end
                 end
+                config.version = tempTable.version
+                compat.saveTable(config,"bootconfig.txt")
             else
                 error("Failed to download files. Server may be down")
             end
@@ -87,10 +94,27 @@ end
 
 
 if config == nil then
+    installer()
 end
+compat.lang = config.lang
 local result, reason = loadfile(compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua")
 if result then
-    local success, result = xpcall(result,erHandle)
+    if config.checkVersion then
+        local worked, errored = compat.internet.request(download .. "version",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+        if worked then
+            local tempTable = JSON.decode(worked)
+            if tempTable.success == true and tempTable.version ~= config.version then
+                local goodToRun = installer(tempTable.version)
+                if goodToRun then
+                    local success, result = xpcall(result,erHandle)
+            end
+        else
+            GUI.alert("Error getting version from website")
+            local success, result = xpcall(result,erHandle)
+        end
+    else
+        local success, result = xpcall(result,erHandle)
+    end
 else
     local goodToRun = installer()
     if goodToRun then

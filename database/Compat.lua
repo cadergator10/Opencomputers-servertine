@@ -10,6 +10,7 @@ local ser = require("serialization")
 local uuid = require("uuid")
 
 module.isMine = true
+module.lang = "English"
 
 local event, system, shell, internet, process, json, io
 local status, lfs = pcall(require, "System")
@@ -117,7 +118,11 @@ function module.system.getLocalization(path)
     if module.isMine then
         return system.getLocalization(path)
     else
-        return module.loadTable(path .. "English.lang")
+        local loc = module.loadTable(path .. module.lang .. ".lang")
+        if loc == nil then
+            module.loadTable(path .. "English.lang")
+        end
+        return loc
     end
 end
 
@@ -148,6 +153,9 @@ function module.internet.download(url,path)
         local file = ""
         for chunk in internet.request(url,nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"}) do
             file = file .. chunk
+        end
+        if fs.exists(path) then
+            fs.remove(path)
         end
         local tableFile = assert(io.open(path, "w"))
         tableFile:write(ser.serialize(tbl))
