@@ -5,7 +5,7 @@ local module = {["system"]={},["fs"]={},["event"]={},["internet"]={}}
 local component = require("component")
 local gpu = component.gpu
 
-local GUI = require("GUI")
+local guiGood, GUI = pcall(require,"GUI")
 local ser = require("serialization")
 local uuid = require("uuid")
 
@@ -174,6 +174,10 @@ function module.fs.readTable(path)
 end
 
 function module.system.addWindow(style)
+    if not guiGood then
+        GUI = require("GUI")
+        guiGood = true
+    end
     if module.isMine then
         return system.addWindow(GUI.filledWindow(2,2,150,45,style))
     else

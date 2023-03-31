@@ -107,6 +107,7 @@ if result then
                 local goodToRun = installer(tempTable.version)
                 if goodToRun then
                     local success, result = xpcall(result,erHandle)
+                end
             end
         else
             GUI.alert("Error getting version from website")
