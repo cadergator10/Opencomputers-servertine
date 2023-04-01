@@ -20,7 +20,7 @@ if not status then
     event = require("event")
     fs = require("filesystem")
     system = require("shell")
-    internet = component.internet
+    internet = require("internet")
     process = require("process")
     io = require("io")
 else
