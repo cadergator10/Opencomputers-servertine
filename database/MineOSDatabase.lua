@@ -113,7 +113,7 @@ end
 
 local function callModem(callPort,...) --Does it work?
   modem.broadcast(callPort,...)
-  local e, _, from, port, _, msg,a,bco,d,f,g,h
+  local e, _, from, port, _, msg,a,b,c,d,f,g,h
   repeat
     e, a,b,c,d,f,g,h = compat.event.pull(1)
   until(e == "modem_message" or e == nil)
@@ -547,11 +547,13 @@ local function devMod(...)
             GUI.alert(loc.moduledownloadsuccess)
             window:removeChildren()
             window:remove()
+            workspace:draw()
             workspace:stop()
           else
             GUI.alert(loc.sendservermodfail)
             window:removeChildren()
             window:remove()
+            workspace:draw()
             workspace:stop()
           end
         end
@@ -685,6 +687,7 @@ local function devMod(...)
           modemPort = addVarArray.port
           modem.open(modemPort)
           window:remove()
+          workspace:draw()
           workspace:stop()
         end
         disabledSet()
@@ -928,6 +931,7 @@ local function finishSetup()
       if userTable == nil then
         GUI.alert(loc.nouserlistfound)
         window:remove()
+        workspace:draw()
         workspace:stop()
       end
     end
@@ -942,6 +946,7 @@ local function finishSetup()
   local contextMenu = menu:addContextMenu("File")
   contextMenu:addItem("Close").onTouch = function()
     window:remove()
+    workspace:draw()
     workspace:stop()
     --os.exit()
   end
