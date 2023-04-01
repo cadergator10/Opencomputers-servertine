@@ -27,6 +27,9 @@ local GUI = require("GUI")
 local JSON = require("JSON")
 
 local arg = ...
+if arg ~= nil then
+    print(arg)
+end
 
 local function split(s, delimiter)
     local result = {};
@@ -83,7 +86,7 @@ local function installer(version)
                 local aRD = compat.fs.path(compat.system.getCurrentScript())
 
                 local folders = split(tempTable.folders,",") --prep folders?
-                for _,value in folders do
+                for _,value in pairs(folders) do
                     if compat.fs.isDirectory(aRD .. value) then
                         compat.fs.remove(aRD .. value)
                     end
@@ -123,7 +126,7 @@ local function clearScreen()
 end
 
 
-if config == nil then
+if config == nil or arg == "--install" then
     installer()
 end
 compat.lang = config.lang
@@ -140,6 +143,9 @@ if result then
                     local success, result = xpcall(dofile,erHandle,result)
                     clearScreen()
                 end
+            else
+                local success, result = xpcall(dofile,erHandle,result)
+                clearScreen()
             end
         else
             GUI.alert("Error getting version from website")
