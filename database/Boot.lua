@@ -49,6 +49,9 @@ local function installer(version)
             compat.saveTable(config,"bootconfig.txt")
             print("New system: Installing servertine")
             install = true
+        elseif arg == "--install" then
+            print("Install command received. Reinstalling everything")
+            install = true
         else
             print("New version for the Servertine Database is available!")
             print(tostring(config.version) .. " -> " .. tostring(version))
