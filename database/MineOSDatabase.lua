@@ -113,7 +113,7 @@ end
 
 local function callModem(callPort,...) --Does it work?
   modem.broadcast(callPort,...)
-  local e, _, from, port, _, msg,a,b,c,d,f,g,h
+  local e, _, from, port, _, msg,a,bco,d,f,g,h
   repeat
     e, a,b,c,d,f,g,h = compat.event.pull(1)
   until(e == "modem_message" or e == nil)

@@ -51,7 +51,7 @@ local function installer(version)
             install = true
         else
             print("New version for the Servertine Database is available!")
-            print(config.version .. " -> " .. version)
+            print(tostring(config.version) .. " -> " .. tostring(version))
             print("Would you like to install this version? yes or no\nSome modules may require the new version")
             local text = term.read():sub(1,-2)
             while text ~= "yes" and text ~= "no" do
@@ -112,6 +112,13 @@ local function erHandle(er)
     error("Something went wrong:\n" .. er .. "\nError reporting will be available in the future")
 end
 
+local function clearScreen()
+    if not compat.isMine then
+        term = require("Term")
+        term.clear()
+    end
+end
+
 
 if config == nil then
     installer()
@@ -119,6 +126,7 @@ end
 compat.lang = config.lang
 local result, reason = loadfile(compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua")
 if result then
+    result = compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua"
     if config.checkVersion then
         local worked, errored = compat.internet.request(download .. "version",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
         if worked then
@@ -126,22 +134,27 @@ if result then
             if tempTable.success == true and tempTable.version ~= config.version then
                 local goodToRun = installer(tempTable.version)
                 if goodToRun then
-                    local success, result = xpcall(result,erHandle)
+                    local success, result = xpcall(dofile,erHandle,result)
+                    clearScreen()
                 end
             end
         else
             GUI.alert("Error getting version from website")
-            local success, result = xpcall(result,erHandle)
+            local success, result = xpcall(dofile,erHandle,result)
+            clearScreen()
         end
     else
-        local success, result = xpcall(result,erHandle)
+        local success, result = xpcall(dofile,erHandle,result)
+        clearScreen()
     end
 else
     local goodToRun = installer()
     if goodToRun then
         result, reason = loadfile(compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua")
         if result then
-            local success, result = xpcall(result,erHandle)
+            result = compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua"
+            local success, result = xpcall(dofile,erHandle,result)
+            clearScreen()
         else
             error("Failed to run installed program. It'sa makea no sensea")
         end
