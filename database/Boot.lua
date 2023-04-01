@@ -18,13 +18,23 @@ if not compat.isMine then --Should, if OpenOS, install all dependencies.
             os.execute("wget -f " .. value .. " /lib/" .. key)
         end
         os.execute("mkdir /lib/FileFormat")
+        print("Installing OCIF in FormatModules folder")
         compat.internet.download("https://github.com/IgorTimofeev/Image/raw/master/OCIF.lua","/lib/FormatModules/OCIF.lua")
     end
 end
 
 local GUI = require("GUI")
+local JSON = require("JSON")
 
 local arg = ...
+
+local function split(s, delimiter)
+    local result = {};
+    for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+      table.insert(result, match);
+    end
+    return result;
+  end
 
 local function installer(version)
     if compat.isMine then
@@ -68,8 +78,18 @@ local function installer(version)
             if worked then
                 local tempTable = JSON.decode(worked) --TODO: Make sure this matches json sent by the server
                 local aRD = compat.fs.path(compat.system.getCurrentScript())
+
+                local folders = split(tempTable.folders,",") --prep folders?
+                for _,value in folders do
+                    if compat.fs.isDirectory(aRD .. value) then
+                        compat.fs.remove(aRD .. value)
+                    end
+                    compat.fs.makeDirectory(aRD .. value)
+                end
+
                 for _, value in pairs(tempTable.files) do
                     if value.type == "db" then
+                        print("Installing to " .. value.path .. " file from URL: " .. value.url)
                         compat.internet.download(value.url,aRD .. value.path)
                     end
                 end
