@@ -177,7 +177,7 @@ function module.internet.download(url,path)
             fs.remove(path)
         end
         local tableFile = assert(io.open(path, "w"))
-        tableFile:write(ser.serialize(tbl))
+        tableFile:write(file)
         tableFile:close()
         file = nil
         return true
