@@ -66,7 +66,7 @@
     export = "экспорт",
     input = "вход",
     number = "число",
-    loc.update = "обновлять",
+    update = "обновлять",
 
     sectorlabel = "Секторы",
     sectorbypass = "байпасный тип",

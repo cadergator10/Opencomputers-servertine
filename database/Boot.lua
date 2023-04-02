@@ -26,6 +26,8 @@ end
 local GUI = require("GUI")
 local JSON = require("JSON")
 
+local didError = false
+
 local arg = ...
 if arg ~= nil then
     print(arg)
@@ -115,11 +117,12 @@ local function installer(version)
 end
 
 local function erHandle(er)
+    didError = true
     error("Something went wrong:\n" .. er .. "\nError reporting will be available in the future")
 end
 
 local function clearScreen()
-    if not compat.isMine then
+    if not compat.isMine and not didError then
         term = require("Term")
         term.clear()
         if config.shutdownonexit then
