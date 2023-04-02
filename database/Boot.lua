@@ -48,7 +48,7 @@ local function installer(version)
         local install = false
         local isConfig = config == nil
         if config == nil then
-            config = {["version"] = -1,["checkVersion"]=true,["lang"]="English"}
+            config = {["version"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true}
             compat.saveTable(config,"bootconfig.txt")
             print("New system: Installing servertine")
             install = true
@@ -122,6 +122,9 @@ local function clearScreen()
     if not compat.isMine then
         term = require("Term")
         term.clear()
+        if config.shutdownonexit then
+            os.execute("shutdown")
+        end
     end
 end
 

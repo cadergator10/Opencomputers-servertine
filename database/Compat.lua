@@ -134,6 +134,25 @@ function module.event.pull(time)
     end
 end
 
+function module.event.addhandler(handler)
+    if module.isMine then
+        return event.addhandler(handler)
+    else
+        event.listen("cardInsert",handler)
+        event.listen("cardRemove",handler)
+        return handler
+    end
+end
+
+function module.event.removehandler(handler)
+    if module.isMine then
+        return event.removehandler(handler)
+    else
+        event.ignore("cardInsert",handler)
+        event.ignore("cardRemove",handler)
+    end
+end
+
 function module.internet.request(url,postData,headers,method)
     if module.isMine then
         return internet.request(url,postData,headers,method)
