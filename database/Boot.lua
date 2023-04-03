@@ -42,18 +42,91 @@ local function split(s, delimiter)
   end
 
 local function installer(version)
+    local install = false
+    local isConfig = config == nil
+    if config == nil then
+        config = {["version"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true}
+        compat.saveTable(config,"bootconfig.txt")
+        install = true
+    end
     if compat.isMine then
         --TODO: Debug if OpenOS version works, then create MineOS one
         --compat.system.addWindow(0xE1E1E1)
+        if isConfig then
+            GUI.alert("New system: Installing servertine")
+        else
+            install = -2
+            workspace = GUI.workspace();
+            local container = GUI.addBackgroundContainer(workspace, true, true, "New version available: " .. tostring(config.version) .. " -> " .. tostring(version))
+            container.layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Install")).onTouch = function()
+                install = true
+                container:remove()
+                workspace:draw(true)
+                workspace:stop()
+            end
+            container.layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Don't Install")).onTouch = function()
+                install = false
+                container:remove()
+                workspace:draw(true)
+                workspace:stop()
+            end
+            container.layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Don't ask again")).onTouch = function()
+                config.checkVersion = false
+                compat.saveTable(config,"bootconfig.txt")
+                install = false
+                container:remove()
+                workspace:draw(true)
+                workspace:stop()
+            end
+            workspace:draw(true)
+            workspace:start()
+        end
+        while install = -2 do
+            --os.sleep() --may require restart if os.sleep()
+        end
+        if install then
+            local worked, errored = compat.internet.request(download .. "files",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+            if worked then
+                local tempTable = JSON.decode(worked) --TODO: Make sure this matches json sent by the server
+                local aRD = compat.fs.path(compat.system.getCurrentScript())
+                workspace = GUI.workspace();
+                local container = GUI.addBackgroundContainer(workspace, true, true, "Setting up folders")\
+                workspace:draw(true)
+                workspace:start()
+                local folders = split(tempTable.folders,",") --prep folders?
+                for _,value in pairs(folders) do
+                    if compat.fs.isDirectory(aRD .. value) then
+                        compat.fs.remove(aRD .. value)
+                    end
+                    compat.fs.makeDirectory(aRD .. value)
+                end
+
+                for _, value in pairs(tempTable.files) do
+                    if value.type == "db" then
+                        container.label.text = "Installing to " .. value.path .. " file from URL: " .. value.url
+                        workspace:draw()
+                        compat.internet.download(value.url,aRD .. value.path)
+                    end
+                end
+                container:remove()
+                workspace:draw(true)
+                workspace:stop()
+                config.version = tempTable.version
+                compat.saveTable(config,"bootconfig.txt")
+            else
+                error("Failed to download files. Server may be down")
+            end
+            --perform install
+            return true
+        elseif not isConfig then
+            return true
+        else
+            return false
+        end
     else
         term.clear()
-        local install = false
-        local isConfig = config == nil
-        if config == nil then
-            config = {["version"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true}
-            compat.saveTable(config,"bootconfig.txt")
+        if isConfig then
             print("New system: Installing servertine")
-            install = true
         elseif arg == "--install" then
             print("Install command received. Reinstalling everything")
             install = true
@@ -118,12 +191,13 @@ end
 
 local function erHandle(er)
     didError = true
-    if module.workspace ~= nil then
-        module.window:remove()
-        module.workspace:stop()
-        module.window, module.workspace = nil, nil
+    if compat.workspace ~= nil then
+        compat.window:remove()
+        compat.workspace:draw(true)
+        compat.workspace:stop()
+        compat.window, compat.workspace = nil, nil
     end
-    if not module.isMine then
+    if not compat.isMine then
         term = require("Term")
         term.clear()
         print("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
