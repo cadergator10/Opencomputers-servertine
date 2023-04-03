@@ -126,9 +126,10 @@ local function erHandle(er)
     if not module.isMine then
         term = require("Term")
         term.clear()
-        print("Something went wrong:\n" .. er .. "\nError reporting will be available in the future")
+        print("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
     end
-    error("Something went wrong:\n" .. er .. "\nError reporting will be available in the future")
+    GUI.alert("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
+    error("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
 end
 
 local function clearScreen()
@@ -136,6 +137,7 @@ local function clearScreen()
         term = require("Term")
         term.clear()
         if config.shutdownonexit then
+            os.sleep(3) --wait 3 sec
             os.execute("shutdown")
         end
     end
@@ -156,20 +158,20 @@ if result then
             if tempTable.success == true and tempTable.version ~= config.version then
                 local goodToRun = installer(tempTable.version)
                 if goodToRun then
-                    local success, result = xpcall(function() dofile(result) end,erHandle)
+                    local success, result = xpcall(dofile,erHandle,result)
                     clearScreen()
                 end
             else
-                local success, result = xpcall(function() dofile(result) end,erHandle)
+                local success, result = xpcall(dofile,erHandle,result)
                 clearScreen()
             end
         else
             GUI.alert("Error getting version from website")
-            local success, result = xpcall(function() dofile(result) end,erHandle)
+            local success, result = xpcall(dofile,erHandle,result)
             clearScreen()
         end
     else
-        local success, result = xpcall(function() dofile(result) end,erHandle)
+        local success, result = xpcall(dofile,erHandle,result)
         clearScreen()
     end
 else
@@ -178,7 +180,7 @@ else
         result, reason = loadfile(compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua")
         if result then
             result = compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua"
-            local success, result = xpcall(function() dofile(result) end,erHandle)
+            local success, result = xpcall(dofile,erHandle,result)
             clearScreen()
         else
             error("Failed to run installed program. It'sa makea no sensea")
