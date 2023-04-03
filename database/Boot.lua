@@ -118,6 +118,16 @@ end
 
 local function erHandle(er)
     didError = true
+    if module.workspace ~= nil then
+        module.window:remove()
+        module.workspace:stop()
+        module.window, module.workspace = nil, nil
+    end
+    if not module.isMine then
+        term = require("Term")
+        term.clear()
+        print("Something went wrong:\n" .. er .. "\nError reporting will be available in the future")
+    end
     error("Something went wrong:\n" .. er .. "\nError reporting will be available in the future")
 end
 
@@ -146,20 +156,20 @@ if result then
             if tempTable.success == true and tempTable.version ~= config.version then
                 local goodToRun = installer(tempTable.version)
                 if goodToRun then
-                    local success, result = xpcall(dofile,erHandle,result)
+                    local success, result = xpcall(function() dofile(result) end,erHandle)
                     clearScreen()
                 end
             else
-                local success, result = xpcall(dofile,erHandle,result)
+                local success, result = xpcall(function() dofile(result) end,erHandle)
                 clearScreen()
             end
         else
             GUI.alert("Error getting version from website")
-            local success, result = xpcall(dofile,erHandle,result)
+            local success, result = xpcall(function() dofile(result) end,erHandle)
             clearScreen()
         end
     else
-        local success, result = xpcall(dofile,erHandle,result)
+        local success, result = xpcall(function() dofile(result) end,erHandle)
         clearScreen()
     end
 else
@@ -168,7 +178,7 @@ else
         result, reason = loadfile(compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua")
         if result then
             result = compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua"
-            local success, result = xpcall(dofile,erHandle,result)
+            local success, result = xpcall(function() dofile(result) end,erHandle)
             clearScreen()
         else
             error("Failed to run installed program. It'sa makea no sensea")

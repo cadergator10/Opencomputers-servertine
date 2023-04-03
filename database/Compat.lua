@@ -202,6 +202,7 @@ function module.system.addWindow(style)
     else
         local work = GUI.application()
         local window = work:addChild(GUI.container(1,1,work.width,work.height))
+        module.workspace, module.window = work, window
         window:addChild(GUI.panel(1,1,window.width,window.height,style))
         return work, window, work:addChild(GUI.menu(1,1,work.width,0xEEEEEE, 0x666666, 0x3366CC, 0xFFFFFF)) --TODO: Check if legacy GUI works with this
     end
