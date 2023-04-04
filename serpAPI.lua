@@ -8,14 +8,10 @@ local syncPort = 199
 local diagPort = 180
 
 local component = require("component")
-local gpu = component.gpu
 local event = require("event")
 local ser = require("serialization")
 local term = require("term")
-local thread = require("thread")
 local process = require("process")
-local uuid = require("uuid")
-local computer = component.computer
 
 local modem = component.modem
 local link

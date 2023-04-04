@@ -6,12 +6,9 @@ local dbPort = 180
 local adminCard = "admincard"
 
 local component = require("component")
-local gpu = component.gpu
 local ser = require("serialization")
 local JSON = require("JSON")
-local uuid = require("uuid")
 local compat = require("Compat") --compatability layer so it all works between OpenOS and MineOS
-local writer
 
 local aRD = compat.fs.path(compat.system.getCurrentScript())
 local stylePath = aRD.."Styles/"
@@ -45,13 +42,6 @@ local download = "https://cadespc.com/servertine/modules/"
 local debug = false
 --local moduleDownloadDebug = false
 
-
-if component.isAvailable("os_cardwriter") then
-  writer = component.os_cardwriter
-else
-  GUI.alert(loc.cardwriteralert)
-  return
-end
 if component.isAvailable("modem") then
   modem = component.modem
 else
@@ -172,6 +162,7 @@ local function devMod(...)
   module.init = function()
 
   end
+
   module.onTouch = function() --TODO: Prepare this for Module installation, user permissions, and more.
     local userEditButton, moduleInstallButton, settingButton, layout
 
@@ -604,10 +595,12 @@ local function devMod(...)
         end
       end
       layout:addChild(GUI.label(1,9,1,1,style.containerLabel,loc.cryptkey))
-      local cryptInput = layout:addChild(GUI.input(15,9,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
-      local disString = tostring(addVarArray.cryptKey[1])
-      for i=2,#addVarArray.cryptKey,1 do
-        disString = disString .. "," .. tostring(addVarArray.cryptKey[i])
+      local cryptInput = layout:addChild(GUI.input(15,9,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style, true))
+      cryptInput.text = "[NOT SHOWN]"
+      cryptInput.onInputFinished = function()
+        if cryptInput.text == "" then
+          cryptInput.text = "[NOT SHOWN]"
+        end
       end
 
       local dropInt = 11
@@ -642,12 +635,15 @@ local function devMod(...)
       end
 
       
-      cryptInput.text = disString
       local acceptButton = layout:addChild(GUI.button(15,dropInt,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.submit))
       acceptButton.onTouch = function()
-        addVarArray.cryptKey = split(cryptInput.text,",")
-        for i=1,#addVarArray.cryptKey,1 do
-          addVarArray.cryptKey[i] = tonumber(addVarArray.cryptKey[i])
+        if cryptInput.text ~= "[NOT SHOWN]" then
+          addVarArray.cryptKey = split(cryptInput.text,",")
+          for i=1,#addVarArray.cryptKey,1 do
+            addVarArray.cryptKey[i] = tonumber(addVarArray.cryptKey[i])
+          end
+        else
+          addVarArray.cryptKey = settingTable.cryptKey
         end
         local updateMeh = false
         if addVarArray.devMode ~= addVarArray.devModePre then
@@ -696,6 +692,9 @@ local function devMod(...)
         styleEdit.disabled = true
         portInput.disabled = false
         autoupdatebutton.disabled = true
+        for key,_ in pairs(setRay) do
+          setRay[key].disabled = true
+        end
         --addInput.disabled = true
         --remButton.disabled = true
       end
@@ -992,6 +991,26 @@ local function signInPage()
         GUI.alert(loc.signinsuccess)
         usernamename, userpasspass = username.text,password.text
         window.modLayout:removeChildren()
+        local mep
+        check,_,_,_,_,work,mep = callModem(modemPort,"integritySync",crypt(ser.serialize({["devMode"]=settingTable.devMode}),settingTable.cryptKey))
+        if check then
+          work = crypt(work,settingTable.cryptKey,true)
+          if work == "true" then
+            mep = ser.unserialize(crypt(mep,settingTable.cryptKey,true))
+            if mep.good == true then
+              finishSetup()
+            else
+              GUI.alert(loc.integviolation,mep.text,loc.integviolation2)
+              window:remove()
+              workspace:draw(true)
+              workspace:stop()
+            end
+          else
+            GUI.alert(loc.integfail)
+          end
+        else
+          GUI.alert(loc.integfailcon)
+        end
         finishSetup()
       else
         GUI.alert(loc.baduserpass)

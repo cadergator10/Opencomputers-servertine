@@ -12,12 +12,13 @@ local shell = require("shell")
 local process = require("process")
 local thread = require("thread")
 local keyboard = require("keyboard")
+local uuid = require("uuid")
 
 local version = "4.0.0"
 
 local serverModules = "https://raw.githubusercontent.com/cadergator10/opencomputer-security-system/main/src/server/modules/modules.txt"
 
-local commands = {"setdevice","signIn","updateuserlist","loginfo","getquery","syncport","moduleinstall", "devModeChange","settingUpdate"}
+local commands = {"setdevice","signIn","updateuserlist","loginfo","getquery","syncport","moduleinstall", "devModeChange","settingUpdate","integritySync"}
 local skipcrypt = {"loginfo","getquery","syncport"}
 
 local modules = {}
@@ -34,6 +35,9 @@ local evthread
 local revealPort = false
 
 local debug = false
+
+local syncKey = nil
+local databaseLink = "" --the uuid of the database's modem. Makes sure only one database can perform certain actions
 
 --------Main Functions
 
@@ -233,7 +237,7 @@ end
 
 local settingTable = loadTable("settings.txt")
 if settingTable == nil then
-  settingTable = {["cryptKey"]={1,2,3,4,5},["port"]=1000,["debug"]=false,["devMode"]=false,["dbSettings"]={}}
+  settingTable = {["cryptKey"]={1,2,3,4,5},["port"]=1000,["debug"]=false,["devMode"]=false,["dbSettings"]={},["databaseLink"]=""}
   saveTable(settingTable,"settings.txt")
 end
 settingTable = loadTable("settings.txt")
@@ -254,6 +258,11 @@ if settingTable.dbSettings == nil then
   settingTable.dbSettings = {}
   saveTable(settingTable,"settings.txt")
 end
+if settingTable.databaseLink == nil then
+  settingTable.databaseLink = ""
+  saveTable(settingTable,"settings.txt")
+end
+databaseLink = settingTable.databaseLink
 modemPort = settingTable.port
 debug = settingTable.debug
 
@@ -397,17 +406,9 @@ server = nil
 local function serversettings()
   local selected = 1
   local pr = revealPort and "hide port" or "reveal port"
-  local set = {"delete all modules",pr,"close menu"}
-  local fresh = function()
-    local nextmsg = "Select one:"
-    for i=1,#set,1 do
-      if selected == i then
-        nextmsg = nextmsg .. " [" .. set[i] .. "] :"
-      else
-        nextmsg = nextmsg .. "  " .. set[i] .. "  :"
-      end
-    end
-    nextmsg = nextmsg:sub(1,-2)
+  local set = {"delete all modules",pr,"unlink database","close menu"}
+  local fresh = function() --Doesn't display all options. You scroll through now (bigger menu possible)
+    local nextmsg = (selected == 1 and "  " or "< ") .. set[selected] .. (selected == #set and "  " or "  >")
     advWrite(nextmsg,0xFFFFFF,true,true,#viewhistory + 5,true)
   end
   fresh()
@@ -428,14 +429,14 @@ local function serversettings()
         os.sleep(0.5)
       end
     elseif char == "enter" then
-      if selected == 1 then
+      if selected == 1 then --clear all the modules
         local path = shell.getWorkingDirectory()
         fs.remove(path .. "/modules")
         os.execute("mkdir modules")
         term.clear()
         print("Wiped modules. Restart server")
         os.exit()
-      elseif selected == 2 then
+      elseif selected == 2 then --enable syncPort (allowing quick setup of stuff) and show on screen
         if revealPort == false then revealPort = true else revealPort = false end
         if revealPort then
           advWrite(#modules .. " modules loaded / port shown: " .. modemPort,nil,false,true,2,true)
@@ -448,7 +449,15 @@ local function serversettings()
         os.sleep(1)
         eventcheckpull = true
         thread.current():kill()
-      elseif selected == 3 then
+      elseif selected == 3 then --Allow a different database to connect
+        databaseLink = ""
+        settingTable.databaseLink = ""
+        saveTable(settingTable,"settings.txt")
+        advWrite("Press enter to bring up menu",0xFFFFFF,false,true,#viewhistory + 5,true)
+        os.sleep(1)
+        eventcheckpull = true
+        thread.current():kill()
+      elseif selected == 4 then --back to menu
         advWrite("Press enter to bring up menu",0xFFFFFF,false,true,#viewhistory + 5,true)
         os.sleep(1)
         eventcheckpull = true
@@ -579,6 +588,32 @@ while true do
         else
           historyUpdate("Error signing in: cryptKey may be incorrect",0xFF0000,false,true)
         end
+      elseif command == "integritySync" then --Verify integrity between Database config and Server config (mainly devMode) Setup to be able to accept a yes/no to fix error, but atm is set to auto correct.
+        data = ser.unserialize(data)
+        if data ~= nil and (databaseLink == "" or from == databaseLink) then --Bad cryptKey likely
+          if data.syncKey == nil then --If nil, then its a verification
+            if databaseLink == "" then
+              databaseLink = from
+              settingTable.databaseLink = from
+              saveTable(settingTable,"settings.txt")
+            end
+            if data.devMode ~= settingTable.devMode then
+              syncKey = uuid.next()
+              bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize({["good"]=false},["key"]=syncKey,["text"]="devLink is incorrect"),settingTable.cryptKey))
+              settingTable.devMode = data.devMode
+              saveTable(settingTable,"settings.txt")
+              dohistory = false
+              evthread:kill()
+              os.exit()
+            end
+          elseif data.syncKey == syncKey then --syncKey is the same as one sent to the server
+            bdcst(from,port,crypt("true",settingTable.cryptKey))
+          else --Bad syncKey.
+            bdcst(from,port,crypt("false",settingTable.cryptKey))
+          end
+        else
+          bdcst(from,port,crypt("false",settingTable.cryptKey))
+        end
       elseif command == "moduleinstall" then
         --TEST: Does module installation work? I gotta move this all to another gitpod thing
         data = ser.unserialize(data)
@@ -610,39 +645,44 @@ while true do
         end
       elseif command == "devModeChange" then --Remove all modules and save backups IF prev mode wasn't dev mode
         data = ser.unserialize(data)
-        if data ~= nil and data.devMode ~= nil and settingTable.devMode ~= data.devMode then
+        if data ~= nil and data.devMode ~= nil then
+          local messUp = data.devMode ~= settingTable.devMode
           bdcst(from,port,crypt("true",settingTable.cryptKey))
           dohistory = false
           evthread:kill()
           term.clear()
           print("Developer mode has been set to " .. tostring(data.devMode))
-          local path = shell.getWorkingDirectory()
-          fs.remove(path .. "/modules")
-          os.execute("mkdir modules")
-          if (data.devMode) then
-            print("Backing up any settings") --IMAHERE
-            saveTable({["devices"]=doorTable,["config"]=userTable},"normalModeBackup.txt")
-            saveTable({},"deviceList.txt")
-            saveTable({},"userList.txt")
-            print("Finished")
-            os.exit()
-          else
-            print("Returning last settings")
-            local lastSettings = loadTable("normalModeBackup.txt")
-            if lastSettings ~= nil then
-              print("Found settings backup")
-              saveTable(lastSettings.devices,"deviceList.txt")
-              saveTable(lastSettings.config,"userList.txt")
-            else
-              print("No settings backup found")
+          if not messUp then
+            local path = shell.getWorkingDirectory()
+            fs.remove(path .. "/modules")
+            os.execute("mkdir modules")
+            if (data.devMode) then
+              print("Backing up any settings") --IMAHERE
+              saveTable({["devices"]=doorTable,["config"]=userTable},"normalModeBackup.txt")
               saveTable({},"deviceList.txt")
               saveTable({},"userList.txt")
+              print("Finished")
+              os.exit()
+            else
+              print("Returning last settings")
+              local lastSettings = loadTable("normalModeBackup.txt")
+              if lastSettings ~= nil then
+                print("Found settings backup")
+                saveTable(lastSettings.devices,"deviceList.txt")
+                saveTable(lastSettings.config,"userList.txt")
+              else
+                print("No settings backup found")
+                saveTable({},"deviceList.txt")
+                saveTable({},"userList.txt")
+              end
+              print("Finished")
             end
-            print("Finished")
-            os.exit()
+          else
+            print("Nothing has been done to background files just in cass (no modules wiped, backups made, files deleted, etc.)")
           end
           settingTable.devMode = data.devMode
           saveTable(settingTable,"settings.txt")
+          os.exit()
         end
       elseif command == "settingUpdate" then --database settings broadcast here
         data = ser.unserialize(data)
