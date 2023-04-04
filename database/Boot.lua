@@ -6,9 +6,9 @@ if not status then --auto assume system is OpenOS because MineOS should autoinst
     compat = require("Compat")
 end
 local download = "https://cadespc.com/servertine/modules/getservertine"
+local aRD = compat.isMine and compat.fs.path(compat.system.getCurrentScript()) or ""
 local config = compat.loadTable(aRD .. "bootconfig.txt")
 local term = not compat.isMine and require("term") or nil
-local aRD = compat.isMine and compat.fs.path(compat.system.getCurrentScript()) or ""
 
 local openOSReq = {["JSON.lua"]="https://github.com/IgorTimofeev/MineOS/raw/master/Libraries/JSON.lua",["GUI.lua"]="https://github.com/IgorTimofeev/GUI/raw/master/GUI.lua",["advancedLua.lua"]="https://github.com/IgorTimofeev/AdvancedLua/raw/master/AdvancedLua.lua",["color.lua"]="https://github.com/IgorTimofeev/Color/raw/master/Color.lua",["doubleBuffering.lua"]="https://github.com/IgorTimofeev/DoubleBuffering/raw/master/DoubleBuffering.lua",["image.lua"]="https://github.com/IgorTimofeev/Image/raw/master/Image.lua",["OCIF.lua"]="https://github.com/IgorTimofeev/Image/raw/master/OCIF.lua"}
 
@@ -47,7 +47,7 @@ local function installer(version)
     local isConfig = config == nil
     if config == nil then
         config = {["version"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true}
-        compat.saveTable(aRD .. config,"bootconfig.txt")
+        compat.saveTable(config,aRD .. "bootconfig.txt")
         install = true
     end
     if compat.isMine then
@@ -73,7 +73,7 @@ local function installer(version)
             end
             container.layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Don't ask again")).onTouch = function()
                 config.checkVersion = false
-                compat.saveTable(aRD .. config,"bootconfig.txt")
+                compat.saveTable(config,aRD .. "bootconfig.txt")
                 install = false
                 container:remove()
                 workspace:draw(true)
@@ -113,7 +113,7 @@ local function installer(version)
                 workspace:draw(true)
                 workspace:stop()
                 config.version = tempTable.version
-                compat.saveTable(aRD .. config,"bootconfig.txt")
+                compat.saveTable(config,aRD .. "bootconfig.txt")
             else
                 error("Failed to download files. Server may be down")
             end
@@ -151,7 +151,7 @@ local function installer(version)
                 end
                 if text == "yes" then
                     config.checkVersion = false
-                    compat.saveTable(aRD .. config,"bootconfig.txt")
+                    compat.saveTable(config,aRD .. "bootconfig.txt")
                 end
             end
         end
@@ -176,7 +176,7 @@ local function installer(version)
                     end
                 end
                 config.version = tempTable.version
-                compat.saveTable(aRD .. config,"bootconfig.txt")
+                compat.saveTable(config,aRD .. "bootconfig.txt")
             else
                 error("Failed to download files. Server may be down")
             end
