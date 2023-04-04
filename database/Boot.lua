@@ -94,7 +94,7 @@ local function installer(version)
                 local container = GUI.addBackgroundContainer(workspace, true, true, "Setting up folders")
                 workspace:draw(true)
                 workspace:start()
-                local folders = split(tempTable.folders,",") --prep folders?
+                local folders = split(tempTable.folders,",") --prep folders? TODO: Fix what's wrong here WHY
                 for _,value in pairs(folders) do
                     if compat.fs.isDirectory(aRD .. value) then
                         compat.fs.remove(aRD .. value)
