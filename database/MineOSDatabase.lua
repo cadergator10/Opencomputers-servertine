@@ -953,16 +953,16 @@ local function finishSetup()
   --Database name and stuff and CardWriter
   window:addChild(GUI.panel(64,2,88,5,style.cardStatusPanel))
   if settingTable.devMode == false then
-    window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " | " .. version))
+    window:addChild(GUI.label(66,2,3,1,style.cardStatusLabel,prgName .. " | " .. version))
   else
-    window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " " .. loc.developermode .. " " .. " | " .. version))
+    window:addChild(GUI.label(66,2,3,1,style.cardStatusLabel,prgName .. " " .. loc.developermode .. " " .. " | " .. version))
   end
   if online then
-    window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,loc.welcome .. " " .. usernamename))
+    window:addChild(GUI.label(66,4,3,1,style.cardStatusLabel,loc.welcome .. " " .. usernamename))
   else
-    window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,loc.currentlyoffline))
+    window:addChild(GUI.label(66,4,3,1,style.cardStatusLabel,loc.currentlyoffline))
   end
-  moduleLabel = window:addChild(GUI.label(66,7,3,1,style.cardStatusLabel,loc.no .. " " .. loc.module .. " " .. loc.selected))
+  moduleLabel = window:addChild(GUI.label(66,6,3,1,style.cardStatusLabel,loc.no .. " " .. loc.module .. " " .. loc.selected))
 
   if settingTable.autoupdate == false and online then
     updateButton = window:addChild(GUI.button(40,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.updateserver))

@@ -81,7 +81,7 @@ local function installer(version)
             workspace:draw(true)
             workspace:start()
         end
-        while install = -2 do
+        while install == -2 do
             --os.sleep() --may require restart if os.sleep()
         end
         if install then
@@ -90,7 +90,7 @@ local function installer(version)
                 local tempTable = JSON.decode(worked) --TODO: Make sure this matches json sent by the server
                 local aRD = compat.fs.path(compat.system.getCurrentScript())
                 workspace = GUI.workspace();
-                local container = GUI.addBackgroundContainer(workspace, true, true, "Setting up folders")\
+                local container = GUI.addBackgroundContainer(workspace, true, true, "Setting up folders")
                 workspace:draw(true)
                 workspace:start()
                 local folders = split(tempTable.folders,",") --prep folders?

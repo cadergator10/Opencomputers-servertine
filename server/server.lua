@@ -599,7 +599,7 @@ while true do
             end
             if data.devMode ~= settingTable.devMode then
               syncKey = uuid.next()
-              bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize({["good"]=false},["key"]=syncKey,["text"]="devLink is incorrect"),settingTable.cryptKey))
+              bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize({["good"]=false,["key"]=syncKey,["text"]="devLink is incorrect"}),settingTable.cryptKey))
               settingTable.devMode = data.devMode
               saveTable(settingTable,"settings.txt")
               dohistory = false
