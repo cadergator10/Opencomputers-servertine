@@ -605,6 +605,8 @@ while true do
               dohistory = false
               evthread:kill()
               os.exit()
+            else
+              bdcst(from,port,crypt("true",settingTable.cryptKey),crypt(ser.serialize({["good"]=true}),settingTable.cryptKey))
             end
           elseif data.syncKey == syncKey then --syncKey is the same as one sent to the server
             bdcst(from,port,crypt("true",settingTable.cryptKey))
