@@ -136,7 +136,7 @@ end
 
 function module.event.addhandler(handler)
     if module.isMine then
-        return event.addhandler(handler)
+        return event.addHandler(handler)
     else
         event.listen("cardInsert",handler)
         event.listen("cardRemove",handler)
@@ -146,7 +146,7 @@ end
 
 function module.event.removehandler(handler)
     if module.isMine then
-        return event.removehandler(handler)
+        return event.removeHandler(handler)
     else
         event.ignore("cardInsert",handler)
         event.ignore("cardRemove",handler)

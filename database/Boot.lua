@@ -46,10 +46,11 @@ local function split(s, delimiter) --splits string ("hello,world,yeah") into tab
 
 local function installer(version) --asks user input and stuff, plus installs all files from my website
     local install = false
+    local saveBoot = true
     local isConfig = config == nil
     if config == nil then --create boot config.
         config = {["version"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true}
-        compat.saveTable(config,aRD .. "bootconfig.txt")
+        saveBoot = true
         install = true
     end
     if compat.isMine then --is MineOS
@@ -95,7 +96,6 @@ local function installer(version) --asks user input and stuff, plus installs all
                 workspace = GUI.workspace();
                 local container = GUI.addBackgroundContainer(workspace, true, true, "Setting up folders")
                 workspace:draw(true)
-                workspace:start()
                 local folders = split(tempTable.folders,",") --prep folders? TODO: Fix what's wrong here WHY
                 for _,value in pairs(folders) do
                     if compat.fs.isDirectory(aRD .. value) then --if dir exists, delete it. Then it makes a directory again
@@ -107,13 +107,12 @@ local function installer(version) --asks user input and stuff, plus installs all
                 for _, value in pairs(tempTable.files) do
                     if value.type == "db" then --Download the required files in all locations
                         container.label.text = "Installing to " .. value.path .. " file from URL: " .. value.url
-                        workspace:draw()
+                        workspace:draw(true)
                         compat.internet.download(value.url,aRD .. value.path)
                     end
                 end
                 container:remove()
                 workspace:draw(true)
-                workspace:stop()
                 config.version = tempTable.version
                 compat.saveTable(config,aRD .. "bootconfig.txt") --update version for version checker
             else
@@ -189,6 +188,9 @@ local function installer(version) --asks user input and stuff, plus installs all
         else
             return false --false means can't run file (not installed likely)
         end
+    end
+    if saveBoot then --at end in case install fails
+        compat.saveTable(config,aRD .. "bootconfig.txt")
     end
 end
 

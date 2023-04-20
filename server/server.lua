@@ -320,7 +320,7 @@ if check then
   saveTable(doorTable,"devicelist.txt")
 end
 
-advWrite("Servertine version: " .. version,0xFFFFFF,false,true,1,true)
+advWrite("Servertine version: " .. version,0xFFFFFF .. (settingTable.devMode == true and " DEV MODE" or ""),false,true,1,true)
 advWrite(#modules .. " modules loaded / port hidden",nil,false,true,2,true)
 advWrite("---------------------------------------------------------------------------",0xFFFFFF,false,true,3,true)
 advWrite("---------------------------------------------------------------------------",0xFFFFFF,false,true,#viewhistory + 4,true)
@@ -648,7 +648,7 @@ while true do
       elseif command == "devModeChange" then --Remove all modules and save backups IF prev mode wasn't dev mode
         data = ser.unserialize(data)
         if data ~= nil and data.devMode ~= nil then
-          local messUp = data.devMode ~= settingTable.devMode
+          local messUp = (data.devMode == settingTable.devMode)
           bdcst(from,port,crypt("true",settingTable.cryptKey))
           dohistory = false
           evthread:kill()
@@ -664,7 +664,6 @@ while true do
               saveTable({},"deviceList.txt")
               saveTable({},"userList.txt")
               print("Finished")
-              os.exit()
             else
               print("Returning last settings")
               local lastSettings = loadTable("normalModeBackup.txt")
