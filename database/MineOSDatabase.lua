@@ -942,7 +942,7 @@ local function finishSetup()
     modules[1].init(nil)
   end
 
-  local contextMenu = module.system.addContextMenu(menu,"File")
+  local contextMenu = compat.system.addContextMenu(menu,"File")
   contextMenu:addItem("Close").onTouch = function()
     window:remove()
     workspace:draw()
