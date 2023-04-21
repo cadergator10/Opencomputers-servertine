@@ -126,6 +126,14 @@ function module.system.getLocalization(path)
     end
 end
 
+function module.system.addContextMenu(menu,file)
+    if module.isMine then
+        return menu:addContextMenuItem(file)
+    else
+        return menu:addContextMenu(file)
+    end
+end
+
 function module.event.pull(time)
     if module.isMine then
         return event.pull(time)
@@ -176,7 +184,7 @@ function module.internet.download(url,path)
         if fs.exists(path) then
             fs.remove(path)
         end
-        local tableFile = assert(io.open(path, "w"))
+        local tableFile = assert(io.open(path, "w")) --error
         tableFile:write(file)
         tableFile:close()
         file = nil

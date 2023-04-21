@@ -17,10 +17,10 @@ if not compat.isMine then --Should, if OpenOS, install all dependencies.
     if not status then
         for key,value in pairs(openOSReq) do
             print("Installing " .. key)
-            compat.internet.download(value,aRD .. path)
+            compat.internet.download(value,aRD .. key)
             --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
         end
-        os.execute("mkdir /lib/FileFormat")
+        os.execute("mkdir /lib/FormatModules")
         print("Installing OCIF in FormatModules folder") --OCIF must be in this folder for Image library to work.
         compat.internet.download("https://github.com/IgorTimofeev/Image/raw/master/OCIF.lua","/lib/FormatModules/OCIF.lua")
     end
@@ -223,7 +223,7 @@ local function clearScreen() --If OpenOS, clear screen to make better after clos
         term = require("Term")
         term.clear()
         if config.shutdownonexit then
-            os.sleep(3) --wait 3 sec
+            os.sleep(1) --wait 1 sec
             os.execute("shutdown")
         end
     end
