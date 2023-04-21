@@ -49,10 +49,11 @@ local function installer(version) --asks user input and stuff, plus installs all
     local saveBoot = true
     local isConfig = config == nil
     if config == nil then --create boot config.
-        config = {["version"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true}
+        config = {["version"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true,["startupParams"]={}}--startupParams are one-time keys to do stuff, usually done by the database itself.
         saveBoot = true
         install = true
     end
+    local style = {bottomButton = 0xFFFFFF, bottomText = 0x555555, bottomSelectButton = 0x880000, bottomSelectText = 0xFFFFFF}
     if compat.isMine then --is MineOS
         --TODO: Debug if OpenOS version works, then create MineOS one
         --compat.system.addWindow(0xE1E1E1)

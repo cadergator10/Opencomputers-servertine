@@ -183,5 +183,6 @@
     integfail = "Failed to check integrity of the server's config",
     integfailcon = "Failed to connect to server to check integrity",
     integviolation = "A config file failed the integrity check and has been fixed: ",
-    integviolation2 = "Server will need to be started again"
+    integviolation2 = "Server will need to be started again",
+    doorbadmessage = "Passes were deleted, so some doors may be missing their passes that you previously set up"
 }
