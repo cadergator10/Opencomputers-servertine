@@ -5,7 +5,8 @@ if not status then --auto assume system is OpenOS because MineOS should autoinst
     os.execute("wget -f https://raw.githubusercontent.com/cadergator10/Opencomputers-serpentine/main/database/Compat.lua Compat.lua")
     compat = require("Compat")
 end
-local download = "https://cadespc.com/servertine/modules/getservertine" --URL used by boot for servertine stuff
+local mainPage = "https://cadespc.com/servertine/modules/"
+local download = mainPage .. "getservertine" --URL used by boot for servertine stuff
 local aRD = compat.isMine and compat.fs.path(compat.system.getCurrentScript()) or "" --path of program
 local config = compat.loadTable(aRD .. "bootconfig.txt") --boot configuration
 local term = not compat.isMine and require("term") or nil --nil if MineOS, is term API if OpenOS
@@ -28,6 +29,7 @@ end
 
 local GUI = require("GUI")
 local JSON = require("JSON")
+local loc = compat.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/") --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
 
 local didError = false --If error handler detects error, then clearScreen() doesn't clear the screen
 
@@ -37,11 +39,11 @@ if arg ~= nil then --If someone inputs args, it prints it out.
 end
 
 local function split(s, delimiter) --splits string ("hello,world,yeah") into table {"hello","world","yeah"}
-    local result = {};
+    local result = {}
     for match in (s..delimiter):gmatch("(.-)"..delimiter) do
-      table.insert(result, match);
+      table.insert(result, match)
     end
-    return result;
+    return result
   end
 
 local function installer(version) --asks user input and stuff, plus installs all files from my website
@@ -49,9 +51,10 @@ local function installer(version) --asks user input and stuff, plus installs all
     local saveBoot = true
     local isConfig = config == nil
     if config == nil then --create boot config.
-        config = {["version"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true,["startupParams"]={}}--startupParams are one-time keys to do stuff, usually done by the database itself.
+        config = {["version"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true,["startupParams"]={},["anonymousReport"]=true}--startupParams are one-time keys to do stuff, usually done by the database itself.
         saveBoot = true
         install = true
+        GUI.alert("By default, anonymous reporting is enabled. If enabled it will automatically send any crashes or errors caused by the system or a module to the developer/owner. You can change this in bootconfig.txt file")
     end
     local style = {bottomButton = 0xFFFFFF, bottomText = 0x555555, bottomSelectButton = 0x880000, bottomSelectText = 0xFFFFFF}
     if compat.isMine then --is MineOS
@@ -61,7 +64,7 @@ local function installer(version) --asks user input and stuff, plus installs all
             GUI.alert("New system: Installing servertine") --Force install of system. Doesn't ask whether to install
         else
             install = -2 --makes sure it waits until user inputs something
-            workspace = GUI.workspace();
+            local workspace = GUI.workspace()
             local container = GUI.addBackgroundContainer(workspace, true, true, "New version available: " .. tostring(config.version) .. " -> " .. tostring(version))
             container.layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Install")).onTouch = function()
                 install = true --Install all stuff
@@ -83,6 +86,12 @@ local function installer(version) --asks user input and stuff, plus installs all
                 workspace:draw(true)
                 workspace:stop()
             end
+            container.panel.onTouch = function() --Always install if panel clicked
+                install = true --Install all stuff
+                container:remove()
+                workspace:draw(true)
+                workspace:stop()
+            end
             workspace:draw(true)
             workspace:start()
         end
@@ -94,7 +103,7 @@ local function installer(version) --asks user input and stuff, plus installs all
             if worked then --if successful request
                 local tempTable = JSON.decode(worked) --decode JSON to table
                 local aRD = compat.fs.path(compat.system.getCurrentScript()) --get file location
-                workspace = GUI.workspace();
+                local workspace = GUI.workspace()
                 local container = GUI.addBackgroundContainer(workspace, true, true, "Setting up folders")
                 workspace:draw(true)
                 local folders = split(tempTable.folders,",") --prep folders? TODO: Fix what's wrong here WHY
@@ -158,7 +167,7 @@ local function installer(version) --asks user input and stuff, plus installs all
             end
         end
         if install then
-            local worked, errored = compat.internet.request(download .. "files",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+            local worked, errored = compat.internet.request(download .. "files",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36",["Content-Type"]="application/json"})
             if worked then
                 local tempTable = JSON.decode(worked) --TODO: Make sure this matches json sent by the server
                 local aRD = compat.fs.path(compat.system.getCurrentScript())
@@ -203,12 +212,20 @@ local function erHandle(er) --Was used to print out errors, but moving to PCall 
         compat.workspace:stop()
         compat.window, compat.workspace = nil, nil
     end
-    if not compat.isMine then
-        term = require("Term")
-        term.clear()
-        print("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
-    end
     GUI.alert("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
+    if config.anonymousReport then
+        local ev, e = compat.internet.request(mainPage .. "anonymousReport",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+        if ev then
+            e = JSON.decode(e)
+            if e.success then
+                GUI.alert("Submitted report")
+            else
+                GUI.alert("Failed to submit report: " .. e.response)
+            end
+        else
+            GUI.alert("Failed request: " .. tostring(e))
+        end
+    end
     error("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
 end
 

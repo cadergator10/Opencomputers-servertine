@@ -116,12 +116,14 @@ end
 
 function module.system.getLocalization(path)
     if module.isMine then
-        return system.getLocalization(path)
+        module.loc = system.getLocalization(path)
+        return module.loc
     else
         local loc = module.loadTable(path .. module.lang .. ".lang")
         if loc == nil then
-            module.loadTable(path .. "English.lang")
+            loc = module.loadTable(path .. "English.lang")
         end
+        module.loc = loc
         return loc
     end
 end
@@ -163,7 +165,7 @@ end
 
 function module.internet.request(url,postData,headers,method)
     if module.isMine then
-        return internet.request(url,postData,headers,method)
+        return internet.request(url,internet.serialize(postData),headers,method)
     else
         local text = ""
         for chunk in internet.request(url,postData,headers,method) do

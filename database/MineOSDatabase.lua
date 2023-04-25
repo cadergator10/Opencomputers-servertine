@@ -14,7 +14,7 @@ local aRD = compat.fs.path(compat.system.getCurrentScript())
 local stylePath = aRD.."Styles/"
 local style = "default.lua"
 local modulesPath = aRD .. "Modules/"
-local loc = compat.system.getLocalization(aRD .. "Localizations/")
+local loc = compat.loc compat.system.getLocalization(aRD .. "Localizations/")
 
 --------
 
