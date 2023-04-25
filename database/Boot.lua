@@ -29,7 +29,6 @@ end
 
 local GUI = require("GUI")
 local JSON = require("JSON")
-local status, loc = pcall(compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/")) --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
 
 local didError = false --If error handler detects error, then clearScreen() doesn't clear the screen
 
@@ -253,6 +252,7 @@ if config == nil or arg == "--install" then
     installer() --If no config or --install key passed after running boot, it runs installer
 end
 compat.lang = config.lang --set compat lang file to whatever is in bootconfig (for OpenOS, since no localization stuff works with it.)
+local status, loc = pcall(compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/")) --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
 local result, reason = loadfile(compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua") --check for database program
 if result then --file exists
     result = compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua" --set path for dofile()
