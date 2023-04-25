@@ -66,6 +66,7 @@
     export = "export",
     input = "input",
     number = "number",
+    update = "update",
 
     sectorlabel = "Sectors",
     sectorbypass = "bypass type",
@@ -178,5 +179,10 @@
     manage = "manage",
     addpassdesc = "This is an add pass, meaning any passes with this add pass will have it unlinked to the pass.",
     finishexportdoor = "Finished exporting door settings and program to selected drive. You can now close out.",
-    nopermission = "You do not have permissions to do this"
+    nopermission = "You do not have permissions to do this",
+    integfail = "Failed to check integrity of the server's config",
+    integfailcon = "Failed to connect to server to check integrity",
+    integviolation = "A config file failed the integrity check and has been fixed: ",
+    integviolation2 = "Server will need to be started again",
+    doorbadmessage = "Passes were deleted, so some doors may be missing their passes that you previously set up"
 }

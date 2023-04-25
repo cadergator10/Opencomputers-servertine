@@ -1,5 +1,4 @@
 local GUI = require("GUI")
-local system = require("System")
 local modemPort = 1000
 local syncPort = 199
 local dbPort = 180
@@ -7,20 +6,15 @@ local dbPort = 180
 local adminCard = "admincard"
 
 local component = require("component")
-local gpu = component.gpu
-local event = require("event")
 local ser = require("serialization")
 local JSON = require("JSON")
-local uuid = require("uuid")
-local fs = require("Filesystem")
-local internet = require("Internet")
-local writer
+local compat = require("Compat") --compatability layer so it all works between OpenOS and MineOS
 
-local aRD = fs.path(system.getCurrentScript())
+local aRD = compat.fs.path(compat.system.getCurrentScript())
 local stylePath = aRD.."Styles/"
 local style = "default.lua"
 local modulesPath = aRD .. "Modules/"
-local loc = system.getLocalization(aRD .. "Localizations/")
+local loc = compat.loc compat.system.getLocalization(aRD .. "Localizations/")
 
 --------
 
@@ -34,7 +28,7 @@ local configBuffer = {} --All module's config options in database
 ----------
 
 local prgName = loc.name
-local version = "v4.0.0"
+local version = "v4.0.2"
 
 local online = true
 local extraOff = false
@@ -46,15 +40,11 @@ local prevmod
 
 local download = "https://cadespc.com/servertine/modules/"
 local debug = false
+
+modID = 0
+isDevMode = false
 --local moduleDownloadDebug = false
 
-
-if component.isAvailable("os_cardwriter") then
-  writer = component.os_cardwriter
-else
-  GUI.alert(loc.cardwriteralert)
-  return
-end
 if component.isAvailable("modem") then
   modem = component.modem
 else
@@ -113,28 +103,12 @@ local function exportstring( s )
   s = string.gsub( s,string.char(26),"\"..string.char(26)..\"" )
   return s
 end
---// The Save Function
-local function saveTable(  tbl,filename )
-  local tableFile = fs.open(filename, "w")
-  tableFile:write(ser.serialize(tbl))
-  tableFile:close()
-end
-
---// The Load Function
-local function loadTable( sfile )
-  local tableFile = fs.open(sfile, "r")
-  if tableFile ~= nil then
-    return ser.unserialize(tableFile:readAll())
-  else
-    return nil
-  end
-end
 
 local function callModem(callPort,...) --Does it work?
   modem.broadcast(callPort,...)
   local e, _, from, port, _, msg,a,b,c,d,f,g,h
   repeat
-    e, a,b,c,d,f,g,h = event.pull(1)
+    e, a,b,c,d,f,g,h = compat.event.pull(1)
   until(e == "modem_message" or e == nil)
   if e == "modem_message" then
     return true,a,b,c,d,f,g,h
@@ -191,6 +165,7 @@ local function devMod(...)
   module.init = function()
 
   end
+
   module.onTouch = function() --TODO: Prepare this for Module installation, user permissions, and more.
     local userEditButton, moduleInstallButton, settingButton, layout
 
@@ -438,18 +413,12 @@ local function devMod(...)
         workspace:draw()
       end
       local tempTable, hash = "", {}
-      local pog = layout:addChild(GUI.progressIndicator(4,33,0x3C3C3C, 0x00B640, 0x99FF80))
-      pog.active = true
-      pog:roll()
-      local worked,errored = internet.rawRequest(download .. (settingTable.devMode and "getmodules/0" or "getmodules"),nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"},function(chunk)
-        pog:roll()
-        tempTable = tempTable .. chunk
-      end, 1000)
+      local worked,errored = compat.internet.request(download .. (settingTable.devMode and "getmodules/0" or "getmodules"),nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
       if worked then
+        tempTable = worked
         moduleTable = {}
         tempTable = JSON.decode(tempTable).modules
         moduleTable = tempTable
-        pog.active = false
         hash = {}
         bothArray = {}
         bothArray[1],bothArray[2] = {}, {}
@@ -535,7 +504,6 @@ local function devMod(...)
           moduleInstallButton.disabled = true
           modulesLayout:removeChildren()
           layout:addChild(GUI.label(2,15,3,3,style.listPageLabel,loc.downloading .. " " .. #bothArray[2] .. " " .. loc.modules .. ". " .. loc.downloadinginfo))
-          pog.active = true
           workspace:draw()
           local serverMods = {}
           local dbMods = {}
@@ -550,16 +518,16 @@ local function devMod(...)
           serverMods.debug = false
           local e,_,_,_,_,good = callModem(modemPort,"moduleinstall",crypt(ser.serialize(serverMods),settingTable.cryptKey))
           if e and crypt(good,settingTable.cryptKey,true) == "true" then --TEST: Does this successfully install everything
-            if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
-            fs.makeDirectory(aRD .. "/Modules")
+            if compat.fs.isDirectory(aRD .. "/Modules") then compat.fs.remove(aRD .. "/Modules") end
+            compat.fs.makeDirectory(aRD .. "/Modules")
             for _,value in pairs(dbMods) do
-              fs.makeDirectory(modulesPath .. "modid" .. tostring(value.module.id))
+              compat.fs.makeDirectory(modulesPath .. "modid" .. tostring(value.module.id))
               for i=1,#value.files,1 do
                 if value.files[i].serverModule == false then
                   if settingTable.devMode == false then
-                    internet.download(value.files[i].url,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
+                    compat.internet.download(value.files[i].url,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
                   elseif value.files[i].devUrl ~= nil then
-                    internet.download(value.files[i].devUrl,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
+                    compat.internet.download(value.files[i].devUrl,modulesPath .. "modid" .. tostring(value.module.id) .. "/" .. value.files[i].path)
                   end
                 end
               end
@@ -568,16 +536,19 @@ local function devMod(...)
             for _, value in pairs(bothArray[2]) do --Save versions to check for updates
               settingTable.moduleVersions[value.module.id] = value.module.version
             end
-            saveTable(settingTable,aRD .. "dbsettings.txt")
+            compat.saveTable(settingTable,aRD .. "dbsettings.txt")
             --After done with downloading
-            pog.active = false
             GUI.alert(loc.moduledownloadsuccess)
             window:removeChildren()
             window:remove()
+            workspace:draw()
+            workspace:stop()
           else
             GUI.alert(loc.sendservermodfail)
             window:removeChildren()
             window:remove()
+            workspace:draw()
+            workspace:stop()
           end
         end
         updateLists()
@@ -627,10 +598,12 @@ local function devMod(...)
         end
       end
       layout:addChild(GUI.label(1,9,1,1,style.containerLabel,loc.cryptkey))
-      local cryptInput = layout:addChild(GUI.input(15,9,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style))
-      local disString = tostring(addVarArray.cryptKey[1])
-      for i=2,#addVarArray.cryptKey,1 do
-        disString = disString .. "," .. tostring(addVarArray.cryptKey[i])
+      local cryptInput = layout:addChild(GUI.input(15,9,16,1, style.containerInputBack,style.containerInputText,style.containerInputPlaceholder,style.containerInputFocusBack,style.containerInputFocusText, "", loc.style, true))
+      cryptInput.text = "[NOT SHOWN]"
+      cryptInput.onInputFinished = function()
+        if cryptInput.text == "" then
+          cryptInput.text = "[NOT SHOWN]"
+        end
       end
 
       local dropInt = 11
@@ -665,12 +638,15 @@ local function devMod(...)
       end
 
       
-      cryptInput.text = disString
       local acceptButton = layout:addChild(GUI.button(15,dropInt,16,1, style.containerButton,style.containerText,style.containerSelectButton,style.containerSelectText, loc.submit))
       acceptButton.onTouch = function()
-        addVarArray.cryptKey = split(cryptInput.text,",")
-        for i=1,#addVarArray.cryptKey,1 do
-          addVarArray.cryptKey[i] = tonumber(addVarArray.cryptKey[i])
+        if cryptInput.text ~= "[NOT SHOWN]" then
+          addVarArray.cryptKey = split(cryptInput.text,",")
+          for i=1,#addVarArray.cryptKey,1 do
+            addVarArray.cryptKey[i] = tonumber(addVarArray.cryptKey[i])
+          end
+        else
+          addVarArray.cryptKey = settingTable.cryptKey
         end
         local updateMeh = false
         if addVarArray.devMode ~= addVarArray.devModePre then
@@ -679,8 +655,8 @@ local function devMod(...)
           if e and crypt(good,settingTable.cryptKey,true) == "true" then --TEST: Does server backup and stuff
             addVarArray.devModePre = nil
             settingTable = addVarArray
-            if fs.isDirectory(aRD .. "/Modules") then fs.remove(aRD .. "/Modules") end
-            saveTable({},aRD .. "userlist.txt")
+            if compat.fs.isDirectory(aRD .. "/Modules") then compat.fs.remove(aRD .. "/Modules") end
+            compat.saveTable({},aRD .. "userlist.txt")
             GUI.alert(loc.serversuccess)
           else
             GUI.alert(loc.servermiss)
@@ -703,13 +679,15 @@ local function devMod(...)
           end
           updateServer()
         end
-        saveTable(settingTable,aRD .. "dbsettings.txt")
+        compat.saveTable(settingTable,aRD .. "dbsettings.txt")
         layout:removeChildren()
         if modemPort ~= addVarArray.port or updateMeh then
           modem.close()
           modemPort = addVarArray.port
           modem.open(modemPort)
           window:remove()
+          workspace:draw()
+          workspace:stop()
         end
         disabledSet()
       end
@@ -717,6 +695,9 @@ local function devMod(...)
         styleEdit.disabled = true
         portInput.disabled = false
         autoupdatebutton.disabled = true
+        for key,_ in pairs(setRay) do
+          setRay[key].disabled = true
+        end
         --addInput.disabled = true
         --remButton.disabled = true
       end
@@ -740,6 +721,7 @@ end
 local function runModule(module)
   window.modLayout:removeChildren()
   local modText = module.id ~= 0 and loc.badversionerror or loc.devmodulename
+  modID = module.id
   for key,vare in pairs(settingTable.moduleVersions) do
     if key == module.id then
       modText = module.name .. " : " .. loc.version .. " " .. tostring(vare)
@@ -765,7 +747,7 @@ local function modulePress()
 end
 
 ----------Setup GUI
-settingTable = loadTable(aRD .. "dbsettings.txt")
+settingTable = compat.loadTable(aRD .. "dbsettings.txt")
 if settingTable == nil then
   GUI.alert(loc.cryptalert)
   settingTable = {["cryptKey"]={1,2,3,4,5},["style"]="default.lua",["autoupdate"]=false,["port"]=1000,["externalModules"]={}}
@@ -775,28 +757,29 @@ if settingTable == nil then
     settingTable.port = tonumber(f)
   end
   modem.close(syncPort)
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
   online = false
 end
 if settingTable.style == nil then
   settingTable.style = "default.lua"
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 if settingTable.autoupdate == nil then
   settingTable.autoupdate = false
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 if settingTable.externalModules ~= nil then
   settingTable.externalModules = nil
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 if settingTable.moduleVersions == nil then
   settingTable.moduleVersions = {}
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 if settingTable.devMode == nil then --devMode has to do with installing modules. Causes you to install modules through the developer url setup by the creator
+  isDevMode = true
   settingTable.devMode = false
-  saveTable(settingTable,aRD .. "dbsettings.txt")
+  compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 
 if settingTable.devMode then
@@ -808,15 +791,15 @@ if modem.isOpen(modemPort) == false then
   modem.open(modemPort)
 end
 
-style = fs.readTable(stylePath .. settingTable.style)
+style = compat.fs.readTable(stylePath .. settingTable.style)
 
-workspace, window, menu = system.addWindow(GUI.filledWindow(2,2,150,45,style.windowFill))
+workspace, window, menu = compat.system.addWindow(style.windowFill) --FIX IT
 
 --window.modLayout = window:addChild(GUI.layout(14, 12, window.width - 14, window.height - 12, 1, 1))
-window.modLayout = window:addChild(GUI.container(14, 12, window.width - 14, window.height - 12)) --136 width, 33 height
+window.modLayout = window:addChild(GUI.container(14, 12, window.width - 14, window.height - 12)) --136 width, 33 height if MineOS / 146, 36 if OpenOS
 
 local function finishSetup()
-  local updates, error = internet.request(download .. "getversions", nil, {["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+  local updates, error = compat.internet.request(download .. "getversions", nil, {["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
   if updates then
     updates = JSON.decode(updates).modules
     if settingTable.devMode == false then --Disable version checking for developer mode
@@ -835,7 +818,7 @@ local function finishSetup()
       updateServer(table)
     end
   end, ["save"] = function()
-    saveTable(userTable,"userlist.txt")
+    compat.saveTable(userTable,"userlist.txt")
   end, ["crypt"]=function(str,reverse)
     return crypt(str,settingTable.cryptKey,reverse)
   end, ["send"]=function(wait,data,data2)
@@ -857,13 +840,13 @@ local function finishSetup()
 
   window:addChild(GUI.panel(1,11,12,window.height - 11,style.listPanel))
   modulesLayout = window:addChild(GUI.list(2,12,10,window.height - 13,3,0,style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
-  local modulors = fs.list(modulesPath)
+  local modulors = compat.fs.list(modulesPath)
   if modulors == nil then modulors = {} end
   modules = {}
 
   do --Contain dev module setup
     local object = modulesLayout:addItem("dev")
-    local success, result = pcall(devMod, workspace, window.modLayout, loc, dbstuff, style)
+    local success, result = pcall(devMod, workspace, window.modLayout, loc, dbstuff, style, compat)
     if success then
       result.id = 0
       object.module = result
@@ -879,7 +862,7 @@ local function finishSetup()
   for i = 1, #modulors do
     local result, reason = loadfile(modulesPath .. modulors[i] .. "/Main.lua")
     if result then
-      local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style)
+      local success, result = pcall(result, workspace, window.modLayout, loc, dbstuff, style, compat)
       if success then
         local object = modulesLayout:addItem(result.name)
         if online then
@@ -931,12 +914,12 @@ local function finishSetup()
       end
       local e,_,_,_,_,good = callModem(modemPort,"settingUpdate",crypt(ser.serialize(isUpdated),settingTable.cryptKey))
       if e and crypt(good,settingTable.cryptKey,true) == "true" then
-        saveTable(settingTable,"dbsettings.txt")
+        compat.saveTable(settingTable,"dbsettings.txt")
       else
         GUI.alert(loc.dbnotreceivedrestart)
       end
     else
-      saveTable(settingTable,"dbsettings.txt")
+      compat.saveTable(settingTable,"dbsettings.txt")
     end
   end
 
@@ -944,14 +927,16 @@ local function finishSetup()
     local check,_,_,_,_,work = callModem(modemPort,"getquery",ser.serialize(tableRay))
     if check then
       work = ser.unserialize(crypt(work,settingTable.cryptKey,true))
-      saveTable(work.data,aRD .. "userlist.txt")
+      compat.saveTable(work.data,aRD .. "userlist.txt")
       userTable = work.data
     else
       GUI.alert(loc.userlistfailgrab)
-      userTable = loadTable(aRD .. "userlist.txt")
+      userTable = compat.loadTable(aRD .. "userlist.txt")
       if userTable == nil then
         GUI.alert(loc.nouserlistfound)
         window:remove()
+        workspace:draw()
+        workspace:stop()
       end
     end
 
@@ -962,25 +947,27 @@ local function finishSetup()
     modules[1].init(nil)
   end
 
-  local contextMenu = menu:addContextMenuItem("File")
+  local contextMenu = compat.system.addContextMenu(menu,"File")
   contextMenu:addItem("Close").onTouch = function()
     window:remove()
+    workspace:draw()
+    workspace:stop()
     --os.exit()
   end
 
   --Database name and stuff and CardWriter
   window:addChild(GUI.panel(64,2,88,5,style.cardStatusPanel))
   if settingTable.devMode == false then
-    window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " | " .. version))
+    window:addChild(GUI.label(66,2,3,1,style.cardStatusLabel,prgName .. " | " .. version))
   else
-    window:addChild(GUI.label(66,3,3,1,style.cardStatusLabel,prgName .. " " .. loc.developermode .. " " .. " | " .. version))
+    window:addChild(GUI.label(66,2,3,1,style.cardStatusLabel,prgName .. " " .. loc.developermode .. " " .. " | " .. version))
   end
   if online then
-    window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,loc.welcome .. " " .. usernamename))
+    window:addChild(GUI.label(66,4,3,1,style.cardStatusLabel,loc.welcome .. " " .. usernamename))
   else
-    window:addChild(GUI.label(66,5,3,1,style.cardStatusLabel,loc.currentlyoffline))
+    window:addChild(GUI.label(66,4,3,1,style.cardStatusLabel,loc.currentlyoffline))
   end
-  moduleLabel = window:addChild(GUI.label(66,7,3,1,style.cardStatusLabel,loc.no .. " " .. loc.module .. " " .. loc.selected))
+  moduleLabel = window:addChild(GUI.label(66,6,3,1,style.cardStatusLabel,loc.no .. " " .. loc.module .. " " .. loc.selected))
 
   if settingTable.autoupdate == false and online then
     updateButton = window:addChild(GUI.button(40,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, loc.updateserver))
@@ -1009,6 +996,26 @@ local function signInPage()
         GUI.alert(loc.signinsuccess)
         usernamename, userpasspass = username.text,password.text
         window.modLayout:removeChildren()
+        local mep
+        check,_,_,_,_,work,mep = callModem(modemPort,"integritySync",crypt(ser.serialize({["devMode"]=settingTable.devMode}),settingTable.cryptKey))
+        if check then
+          work = crypt(work,settingTable.cryptKey,true)
+          if work == "true" then
+            mep = ser.unserialize(crypt(mep,settingTable.cryptKey,true))
+            if mep.good == true then
+              finishSetup()
+            else
+              GUI.alert(loc.integviolation,mep.text,loc.integviolation2)
+              window:remove()
+              workspace:draw(true)
+              workspace:stop()
+            end
+          else
+            GUI.alert(loc.integfail)
+          end
+        else
+          GUI.alert(loc.integfailcon)
+        end
         finishSetup()
       else
         GUI.alert(loc.baduserpass)
