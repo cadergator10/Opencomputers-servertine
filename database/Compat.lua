@@ -165,10 +165,11 @@ end
 
 function module.internet.request(url,postData,headers,method)
     if module.isMine then
-        return internet.request(url,internet.serialize(postData),headers,method)
+        return internet.request(url,postData ~= nil and internet.serialize(postData) or nil,headers,method)
     else
+        local JSON = require("JSON")
         local text = ""
-        for chunk in internet.request(url,postData,headers,method) do
+        for chunk in internet.request(url,postData ~= nil and JSON.encode(postData) or nil,headers,method) do
             text = text .. chunk
         end
         return text
@@ -180,7 +181,7 @@ function module.internet.download(url,path)
         return internet.download(url,path)
     else
         local file = ""
-        for chunk in internet.request(url,nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"}) do
+        for chunk in internet.request(url,nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36",["content-type"]="application/json"}) do
             file = file .. chunk
         end
         if fs.exists(path) then
