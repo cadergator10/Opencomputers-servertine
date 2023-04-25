@@ -14,7 +14,7 @@ local thread = require("thread")
 local keyboard = require("keyboard")
 local uuid = require("uuid")
 
-local version = "4.0.0"
+local version = "4.0.2"
 
 local serverModules = "https://raw.githubusercontent.com/cadergator10/opencomputer-security-system/main/src/server/modules/modules.txt"
 
