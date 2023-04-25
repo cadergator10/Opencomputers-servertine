@@ -29,7 +29,7 @@ end
 
 local GUI = require("GUI")
 local JSON = require("JSON")
-local loc = compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/") --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
+local status, loc = pcall(compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/")) --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
 
 local didError = false --If error handler detects error, then clearScreen() doesn't clear the screen
 
@@ -125,6 +125,7 @@ local function installer(version) --asks user input and stuff, plus installs all
                 workspace:draw(true)
                 config.version = tempTable.version
                 compat.saveTable(config,aRD .. "bootconfig.txt") --update version for version checker
+                loc = compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/") --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
             else
                 error("Failed to download files. Server may be down")
             end
@@ -188,6 +189,7 @@ local function installer(version) --asks user input and stuff, plus installs all
                 end
                 config.version = tempTable.version --change version for version checker
                 compat.saveTable(config,aRD .. "bootconfig.txt")
+                loc = compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/") --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
             else
                 error("Failed to download files. Server may be down") --failed to connect to server
             end
