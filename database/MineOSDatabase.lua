@@ -40,6 +40,9 @@ local prevmod
 
 local download = "https://cadespc.com/servertine/modules/"
 local debug = false
+
+modID = 0
+isDevMode = false
 --local moduleDownloadDebug = false
 
 if component.isAvailable("modem") then
@@ -718,6 +721,7 @@ end
 local function runModule(module)
   window.modLayout:removeChildren()
   local modText = module.id ~= 0 and loc.badversionerror or loc.devmodulename
+  modID = module.id
   for key,vare in pairs(settingTable.moduleVersions) do
     if key == module.id then
       modText = module.name .. " : " .. loc.version .. " " .. tostring(vare)
@@ -773,6 +777,7 @@ if settingTable.moduleVersions == nil then
   compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end
 if settingTable.devMode == nil then --devMode has to do with installing modules. Causes you to install modules through the developer url setup by the creator
+  isDevMode = true
   settingTable.devMode = false
   compat.saveTable(settingTable,aRD .. "dbsettings.txt")
 end

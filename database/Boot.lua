@@ -29,7 +29,7 @@ end
 
 local GUI = require("GUI")
 local JSON = require("JSON")
-local loc = compat.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/") --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
+local loc = compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/") --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
 
 local didError = false --If error handler detects error, then clearScreen() doesn't clear the screen
 
@@ -214,7 +214,7 @@ local function erHandle(er) --Was used to print out errors, but moving to PCall 
     end
     GUI.alert("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
     if config.anonymousReport then
-        local ev, e = compat.internet.request(mainPage .. "anonymousReport",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+        local ev, e = compat.internet.request(mainPage .. "anonymousReport",{["moduleId"] = (modID ~= 0 and modID or nil),["description"] = tostring(er)},{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
         if ev then
             e = JSON.decode(e)
             if e.success then
