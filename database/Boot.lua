@@ -167,7 +167,7 @@ local function installer(version) --asks user input and stuff, plus installs all
             end
         end
         if install then
-            local worked, errored = compat.internet.request(download .. "files",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36",["Content-Type"]="application/json"})
+            local worked, errored = compat.internet.request(download .. "files",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
             if worked then
                 local tempTable = JSON.decode(worked) --TODO: Make sure this matches json sent by the server
                 local aRD = compat.fs.path(compat.system.getCurrentScript())
@@ -215,7 +215,7 @@ local function erHandle(er) --Was used to print out errors, but moving to PCall 
     end
     GUI.alert("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
     if config.anonymousReport and isDevMode == false then --DO NOT REPORT if isDevMode is false
-        local ev, e = compat.internet.request(mainPage .. "anonymousReport",{["moduleId"] = (modID ~= 0 and modID or nil),["description"] = tostring(er)},{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+        local ev, e = compat.internet.request(mainPage .. "anonymousReport",{["moduleId"] = (modID ~= 0 and modID or nil),["description"] = tostring(er)},{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36",["Content-Type"]="application/json"})
         if ev then
             ev = JSON.decode(ev)
             if ev.success then
