@@ -213,7 +213,7 @@ local function erHandle(er) --Was used to print out errors, but moving to PCall 
         compat.workspace:stop()
         compat.window, compat.workspace = nil, nil
     end
-    GUI.alert("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
+    GUI.alert("Something went wrong:\n" .. tostring(er) .. ((config.anonymousReport and isDevMode == false) and "\nReporting error to server" or "\nAnonymous Reporting disabled"))
     if config.anonymousReport and isDevMode == false then --DO NOT REPORT if isDevMode is false
         local ev, e = compat.internet.request(mainPage .. "anonymousReport",{["moduleId"] = (modID ~= 0 and modID or nil),["description"] = tostring(er)},{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36",["Content-Type"]="application/json"})
         if ev then
