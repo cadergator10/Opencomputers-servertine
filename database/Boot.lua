@@ -215,7 +215,7 @@ local function erHandle(er) --Was used to print out errors, but moving to PCall 
     end
     GUI.alert("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
     if config.anonymousReport and isDevMode == false then --DO NOT REPORT if isDevMode is false
-        local ev = compat.internet.request(mainPage .. "anonymousReport",{["moduleId"] = (modID ~= 0 and modID or nil),["description"] = tostring(er)},{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+        local ev, e = compat.internet.request(mainPage .. "anonymousReport",{["moduleId"] = (modID ~= 0 and modID or nil),["description"] = tostring(er)},{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
         if ev then
             ev = JSON.decode(ev)
             if ev.success then
@@ -224,7 +224,7 @@ local function erHandle(er) --Was used to print out errors, but moving to PCall 
                 GUI.alert("Failed to submit report: " .. ev.response)
             end
         else
-            GUI.alert("Failed request: " .. tostring(ev))
+            GUI.alert("Failed request: " .. tostring(e))
         end
     end
     error("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")

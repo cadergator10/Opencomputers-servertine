@@ -172,7 +172,7 @@ function module.internet.request(url,postData,headers,method)
         for chunk in internet.request(url,postData ~= nil and JSON.encode(postData) or nil,headers,method) do
             text = text .. chunk
         end
-        return text
+        return text, "error unknown (openos)"
     end
 end
 
