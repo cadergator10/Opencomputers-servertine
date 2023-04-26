@@ -87,8 +87,8 @@ end
   --------Called Functions
 
 local function update(_, localAddress, remoteAddress, port, distance, msg, data)
-  if msg == "doorCheck" then
-    send(modemPort,true,"true")
+  if msg == "deviceCheck" then
+    send(nil,modemPort,true,"true")
   end
 end
 
