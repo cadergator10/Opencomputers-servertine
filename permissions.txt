@@ -1,0 +1,5 @@
+dev.* (all developer module features)
+dev.usermanagement (manage users and permissions and such.)
+dev.systemmanagement (manage modules and settings)
+
+Very few for base functionality. Other modules can implement more
