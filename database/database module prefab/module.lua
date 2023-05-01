@@ -3,7 +3,7 @@ local GUI = require("GUI")
 
 local userTable -- Holds userTable stuff.
 
-local workspace, window, loc, database, style = table.unpack({...}) --Sets up necessary variables: workspace is workspace, window is area to work in, loc is localization file, database are database commands, and style is the selected style file.
+local workspace, window, loc, database, style, compat = table.unpack({...}) --Sets up necessary variables: workspace is workspace, window is area to work in, loc is localization file, database are database commands, and style is the selected style file.
 
 module.name = "Example" --The name that shows up on the module's button.
 module.table = {"testmod","testmod2"} --Set to the keys you want pulled from the userlist on the server,
