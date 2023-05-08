@@ -18,7 +18,7 @@ if not compat.isMine then --Should, if OpenOS, install all dependencies.
     if not status then
         for key,value in pairs(openOSReq) do
             print("Installing " .. key)
-            compat.internet.download(value,aRD .. key)
+            compat.internet.download(value,"/lib/" .. key)
             --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
         end
         os.execute("mkdir /lib/FormatModules")
