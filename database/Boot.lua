@@ -250,6 +250,12 @@ end
 
 if config == nil or arg == "--install" then
     installer() --If no config or --install key passed after running boot, it runs installer
+elseif arg == "--lib" then
+    for key,value in pairs(openOSReq) do
+        print("Installing " .. key)
+        compat.internet.download(value,"/lib/" .. key)
+        --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
+    end
 end
 compat.lang = config.lang --set compat lang file to whatever is in bootconfig (for OpenOS, since no localization stuff works with it.)
 local status, loc = pcall(compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/")) --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
