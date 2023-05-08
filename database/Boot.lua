@@ -11,7 +11,7 @@ local aRD = compat.isMine and compat.fs.path(compat.system.getCurrentScript()) o
 local config = compat.loadTable(aRD .. "bootconfig.txt") --boot configuration
 local term = not compat.isMine and require("term") or nil --nil if MineOS, is term API if OpenOS
 --openOSReq are library files for GUI and GUI API + JSON
-local openOSReq = {["JSON.lua"]="https://github.com/IgorTimofeev/MineOS/raw/master/Libraries/JSON.lua",["GUI.lua"]="https://github.com/IgorTimofeev/GUI/raw/master/GUI.lua",["advancedLua.lua"]="https://github.com/IgorTimofeev/AdvancedLua/raw/master/AdvancedLua.lua",["color.lua"]="https://github.com/IgorTimofeev/Color/raw/master/Color.lua",["doubleBuffering.lua"]="https://github.com/IgorTimofeev/DoubleBuffering/raw/master/DoubleBuffering.lua",["image.lua"]="https://github.com/IgorTimofeev/Image/raw/master/Image.lua",["OCIF.lua"]="https://github.com/IgorTimofeev/Image/raw/master/OCIF.lua"}
+local openOSReq = {["JSON.lua"]="https://github.com/IgorTimofeev/MineOS/raw/master/Libraries/JSON.lua",["GUI.lua"]="https://raw.githubusercontent.com/cadergator10/Opencomputers-serpentine/main/database/GUI.lua",["advancedLua.lua"]="https://github.com/IgorTimofeev/AdvancedLua/raw/master/AdvancedLua.lua",["color.lua"]="https://github.com/IgorTimofeev/Color/raw/master/Color.lua",["doubleBuffering.lua"]="https://github.com/IgorTimofeev/DoubleBuffering/raw/master/DoubleBuffering.lua",["image.lua"]="https://github.com/IgorTimofeev/Image/raw/master/Image.lua",["OCIF.lua"]="https://github.com/IgorTimofeev/Image/raw/master/OCIF.lua"}
 
 if not compat.isMine then --Should, if OpenOS, install all dependencies.
     local status, _ = pcall(require,"GUI") --Check if GUI API exists. Otherwise, download it.
