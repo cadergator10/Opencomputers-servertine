@@ -12,7 +12,7 @@ local uuid = require("uuid")
 module.isMine = true
 module.lang = "English"
 
-local event, system, shell, internet, process, json, io
+local event, system, shell, internet, process, json, io,fs
 local status, lfs = pcall(require, "System")
 if not status then
     lfs = nil
@@ -30,6 +30,14 @@ else
     json = require("JSON")
     system = lfs
     lfs = nil
+end
+
+function module.fs.open(sfile, type)
+    if module.isMine then
+        return fs.open(sfile, type)
+    else
+        return io.open(sfile, type)
+    end
 end
 
 function module.saveTable(  tbl,filename )
