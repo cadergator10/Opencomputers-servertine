@@ -40,6 +40,14 @@ function module.fs.open(sfile, type)
     end
 end
 
+function module.fs.readFile(sfile)
+    if(module.isMine) then
+        return sfile:readAll()
+    else
+        return sfile:read("*all")
+    end
+end
+
 function module.saveTable(  tbl,filename )
     if module.isMine then
         local tableFile = fs.open(filename, "w")
