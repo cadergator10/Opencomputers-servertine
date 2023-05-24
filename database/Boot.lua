@@ -256,6 +256,11 @@ elseif arg == "--lib" then
         compat.internet.download(value,"/lib/" .. key)
         --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
     end
+elseif arg == "--delcompat" then
+    compat.fs.remove(aRD .. "Compat.lua")
+    print("Compat library removed! Can be reinstalled after rebooting pc")
+    os.sleep(3)
+    os.execute("shutdown")
 end
 compat.lang = config.lang --set compat lang file to whatever is in bootconfig (for OpenOS, since no localization stuff works with it.)
 local status, loc = pcall(compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/")) --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
