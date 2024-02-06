@@ -30,6 +30,9 @@ end
 local GUI = require("GUI")
 local JSON = require("JSON")
 
+--libs that get filled in future
+local errHan
+
 local didError = false --If error handler detects error, then clearScreen() doesn't clear the screen
 
 local arg = ...
@@ -45,15 +48,19 @@ local function split(s, delimiter) --splits string ("hello,world,yeah") into tab
     return result
   end
 
-local function installer(version) --asks user input and stuff, plus installs all files from my website
+local function installer(version, bootver) --asks user input and stuff, plus installs all files from my website
     local install = false
     local saveBoot = true
     local isConfig = config == nil
     if config == nil then --create boot config.
-        config = {["version"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true,["startupParams"]={},["anonymousReport"]=true}--startupParams are one-time keys to do stuff, usually done by the database itself.
+        config = {["version"] = -1,["bootver"] = -1,["checkVersion"]=true,["lang"]="English",["shutdownonexit"]=true,["startupParams"]={},["anonymousReport"]=true}--startupParams are one-time keys to do stuff, usually done by the database itself.
         saveBoot = true
         install = true
         GUI.alert("By default, anonymous reporting is enabled. If enabled it will automatically send any crashes or errors caused by the system or a module to the developer/owner. You can change this in bootconfig.txt file")
+    elseif config.bootver == nil then
+        config.bootver = -1
+        saveBoot = true
+        install = true
     end
     local style = {bottomButton = 0xFFFFFF, bottomText = 0x555555, bottomSelectButton = 0x880000, bottomSelectText = 0xFFFFFF}
     if compat.isMine then --is MineOS
@@ -61,10 +68,14 @@ local function installer(version) --asks user input and stuff, plus installs all
         --compat.system.addWindow(0xE1E1E1)
         if isConfig then
             GUI.alert("New system: Installing servertine") --Force install of system. Doesn't ask whether to install
+        elseif config.bootver == -1 then
+            GUI.alert("Boot files prepping install")
         else
             install = -2 --makes sure it waits until user inputs something
             local workspace = GUI.workspace()
-            local container = GUI.addBackgroundContainer(workspace, true, true, "New version available: " .. tostring(config.version) .. " -> " .. tostring(version))
+            local container = GUI.addBackgroundContainer(workspace, true, true, "New version available:" )
+            if version ~= config.version then container.layout:addChild(GUI.label(80,5,16,1, style.bottomText, "Servertine: " .. tostring(config.version) .. " -> " .. tostring(version))) end
+            if bootver ~= config.bootver then container.layout:addChild(GUI.label(80,5,16,1, style.bottomText, "Boot Version: " .. tostring(config.bootver) .. " -> " .. tostring(bootver))) end
             container.layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Install")).onTouch = function()
                 install = true --Install all stuff
                 container:remove()
@@ -103,6 +114,7 @@ local function installer(version) --asks user input and stuff, plus installs all
                 local tempTable = JSON.decode(worked) --decode JSON to table
                 local aRD = compat.fs.path(compat.system.getCurrentScript()) --get file location
                 local workspace = GUI.workspace()
+                --main stuff
                 local container = GUI.addBackgroundContainer(workspace, true, true, "Setting up folders")
                 workspace:draw(true)
                 local folders = split(tempTable.folders,",") --prep folders? TODO: Fix what's wrong here WHY
@@ -112,12 +124,36 @@ local function installer(version) --asks user input and stuff, plus installs all
                     end
                     compat.fs.makeDirectory(aRD .. value)
                 end
+                --doing boot stuff first
+                if(bootver ~= config.bootver) then
+                    --[[if not (compat.isMine) then
+                        for key,value in pairs(openOSReq) do --install
+                            print("Installing " .. key)
+                            compat.internet.download(value,"/lib/" .. key)
+                            --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
+                        end
+                    end]] --commented since clearly mineos
+                    if compat.fs.isDirectory(aRD .. "Boot") then
+                        compat.fs.remove(aRD .. "Boot")
+                    end
+                    compat.fs.makeDirectory(aRD .. "Boot")
+                    for _, value in pairs(tempTable.files) do
+                        if value.type == "boot" then
+                            container.label.text = "Installing boot file to " .. value.path .. " file from URL: " .. value.url
+                            workspace:draw(true)
+                            compat.internet.download(value.url,aRD .. "Boot/" .. value.path)
+                        end --Shouldn't need itself overwritten since not OpenOS.
+                    end
+                end
+                --other stuff
+                if(version ~= config.version) then
 
-                for _, value in pairs(tempTable.files) do
-                    if value.type == "db" then --Download the required files in all locations
-                        container.label.text = "Installing to " .. value.path .. " file from URL: " .. value.url
-                        workspace:draw(true)
-                        compat.internet.download(value.url,aRD .. value.path)
+                    for _, value in pairs(tempTable.files) do
+                        if value.type == "db" then --Download the required files in all locations
+                            container.label.text = "Installing to " .. value.path .. " file from URL: " .. value.url
+                            workspace:draw(true)
+                            compat.internet.download(value.url,aRD .. value.path)
+                        end
                     end
                 end
                 container:remove()
@@ -179,7 +215,32 @@ local function installer(version) --asks user input and stuff, plus installs all
                     end --setup folders
                     compat.fs.makeDirectory(aRD .. value)
                 end
-
+                --doing boot stuff first
+                if(bootver ~= config.bootver) then
+                    for key,value in pairs(openOSReq) do --install
+                        print("Installing " .. key)
+                        compat.internet.download(value,"/lib/" .. key)
+                        --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
+                    end
+                    if compat.fs.isDirectory(aRD .. "Boot") then
+                        compat.fs.remove(aRD .. "Boot")
+                    end
+                    compat.fs.makeDirectory(aRD .. "Boot")
+                    local mainF = null
+                    for _, value in pairs(tempTable.files) do
+                        if value.type == "boot" then
+                            print("Installing boot file to " .. value.path .. " file from URL: " .. value.url)
+                            compat.internet.download(value.url,aRD .. "Boot/" .. value.path)
+                        elseif value.type == "bootmain" then
+                            mainF = value
+                        end
+                    end
+                    if mainF ~= null then
+                        print("Installing main boot program")
+                        compat.internet.download(mainF.url, aRD .. "boot.lua")
+                    end
+                end
+                --other stuff
                 for _, value in pairs(tempTable.files) do --install files
                     if value.type == "db" then
                         print("Installing to " .. value.path .. " file from URL: " .. value.url)
@@ -187,7 +248,14 @@ local function installer(version) --asks user input and stuff, plus installs all
                     end
                 end
                 config.version = tempTable.version --change version for version checker
+                local goodBoot = bootver ~= config.bootver
+                config.bootver = tempTable.bootver
                 compat.saveTable(config,aRD .. "bootconfig.txt")
+                if(goodBoot) then
+                    print("Please restart computer to run new boot")
+                    os.sleep(2)
+                    os.execute("shutdown")
+                end
                 loc = compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/") --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
             else
                 error("Failed to download files. Server may be down") --failed to connect to server
@@ -203,31 +271,6 @@ local function installer(version) --asks user input and stuff, plus installs all
     if saveBoot then --at end in case install fails
         compat.saveTable(config,aRD .. "bootconfig.txt")
     end
-end
-
-local function erHandle(er) --Was used to print out errors, but moving to PCall as that works more than XPcall
-    didError = true
-    if compat.workspace ~= nil then
-        compat.window:remove()
-        compat.workspace:draw(true)
-        compat.workspace:stop()
-        compat.window, compat.workspace = nil, nil
-    end
-    GUI.alert("Something went wrong:\n" .. tostring(er) .. ((config.anonymousReport and isDevMode == false) and "\nReporting error to server" or "\nAnonymous Reporting disabled"))
-    if config.anonymousReport and isDevMode == false then --DO NOT REPORT if isDevMode is false
-        local ev, e = compat.internet.request(mainPage .. "anonymousReport",{["moduleId"] = (modID ~= 0 and modID or nil),["description"] = tostring(er)},{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36",["Content-Type"]="application/json"})
-        if ev then
-            ev = JSON.decode(ev)
-            if ev.success then
-                GUI.alert("Submitted report")
-            else
-                GUI.alert("Failed to submit report: " .. ev.response)
-            end
-        else
-            GUI.alert("Failed request: " .. tostring(e))
-        end
-    end
-    error("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
 end
 
 local function clearScreen() --If OpenOS, clear screen to make better after closing.
@@ -248,7 +291,7 @@ local function clearScreen() --If OpenOS, clear screen to make better after clos
 end
 
 
-if config == nil or arg == "--install" then
+if config == nil or arg == "--install" or config.bootver == nil then
     installer() --If no config or --install key passed after running boot, it runs installer
 elseif arg == "--lib" then
     for key,value in pairs(openOSReq) do
@@ -262,6 +305,9 @@ elseif arg == "--delcompat" then
     os.sleep(3)
     os.execute("shutdown")
 end
+
+errHan = require("Boot/errorhandler")
+
 compat.lang = config.lang --set compat lang file to whatever is in bootconfig (for OpenOS, since no localization stuff works with it.)
 local status, loc = pcall(compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/")) --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
 local result, reason = loadfile(compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua") --check for database program
@@ -272,18 +318,20 @@ if result then --file exists
         if worked then --If got info from website
             local tempTable = JSON.decode(worked)
             if tempTable.success == true and tempTable.version ~= config.version then --success checking version and version is not the same as one on web (bad version or update to system)
-                local goodToRun = installer(tempTable.version) --run installer
+                local goodToRun = installer(tempTable.version, tempTable.bootver) --run installer
                 if goodToRun then --run program
                     local success, result = pcall(dofile,result)
                     if not success then
-                        erHandle(result)
+                        errHan.erHandle(result)
+                        didError = true
                     end
                     clearScreen()
                 end
             else
                 local success, result = pcall(dofile,result)
                 if not success then
-                    erHandle(result)
+                    errHan.erHandle(result)
+                    didError = true
                 end
                 clearScreen()
             end
@@ -291,14 +339,16 @@ if result then --file exists
             GUI.alert("Error getting version from website")
             local success, result = pcall(dofile,result)
             if not success then
-                erHandle(result)
+                errHan.erHandle(result)
+                didError = true
             end
             clearScreen()
         end
     else --no version checking: only run program
         local success, result = pcall(dofile,result)
         if not success then
-            erHandle(result)
+            errHan.erHandle(result)
+            didError = true
         end
         clearScreen()
     end
@@ -310,7 +360,8 @@ else --try running installer since db file doesn't exist
             result = compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua"
             local success, result = pcall(dofile,result)
             if not success then
-                erHandle(result)
+                errHan.erHandle(result)
+                didError = true
             end
             clearScreen()
         else --still doesn't exist?
