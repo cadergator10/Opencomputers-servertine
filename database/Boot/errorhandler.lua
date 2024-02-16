@@ -24,36 +24,37 @@ function module.erHandle(er) --Was used to print out errors, but moving to PCall
     end
     GUI.alert("Something went wrong:\n" .. tostring(er) .. ((config.anonymousReport and isDevMode == false) and "\nReporting error to server" or "\nAnonymous Reporting disabled"))
 
-    local workspace
-    if not compat.isMine then
-        workspace = GUI.application()
-    else
-        workspace = GUI.workspace()
-    end --TODO: Finish zis
-    local container = GUI.addBackgroundContainer(workspace, true, true, "Would you like to fill out the report or leave it anonymous?" )
-    container.layout:addChild(container.layout:addChild(GUI.label(80,5,16,1, 0x555555, "Filling it out sends the files from your system to the site")))
-    container.layout:addChild(container.layout:addChild(GUI.label(80,5,16,1, 0x555555, "as well as creates a page for you to add additional details + remove some files")))
-    container.layout:addChild(container.layout:addChild(GUI.label(80,5,16,1, 0x555555, "If you don't go to the site within 10 minutes, it will submit all data anyway")))
+    if isDevMode == false then --DO NOT REPORT if isDevMode is false
 
-    local isFill = -2
-    container.layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Fill out report")).onTouch = function()
-        container:remove()
-        workspace:draw(true)
-        workspace:stop()
-        isFill = true
-    end
-    container.layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Anonymous Only")).onTouch = function()
-        container:remove()
-        workspace:draw(true)
-        workspace:stop()
-        isFill = false
-    end
-    while isFill == -2 do --repeat until user presses button. TEST: Not tested yet
-        --os.sleep() --may require restart if os.sleep()
-    end
+        local workspace
+        if not compat.isMine then
+            workspace = GUI.application()
+        else
+            workspace = GUI.workspace()
+        end
+        local container = GUI.addBackgroundContainer(workspace, true, true, config.anonymousReport and "Would you like to fill out the report or leave it anonymous?" or "Would you like to fill out the report or not send anything?")
+        container.layout:addChild(container.layout:addChild(GUI.label(80,5,16,1, 0x555555, "Filling it out sends the files from your system to the site")))
+        container.layout:addChild(container.layout:addChild(GUI.label(80,5,16,1, 0x555555, "as well as creates a page for you to add additional details + remove some files")))
+        container.layout:addChild(container.layout:addChild(GUI.label(80,5,16,1, 0x555555, "If you don't go to the site within 10 minutes, it will submit all data anyway")))
 
-    if config.anonymousReport and isDevMode == false then --DO NOT REPORT if isDevMode is false
-        if isFill == false then
+        local isFill = -2
+        container.layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Fill out report")).onTouch = function()
+            container:remove()
+            workspace:draw(true)
+            workspace:stop()
+            isFill = true
+        end
+        container.layout:addChild(GUI.button(80,5,16,1,style.bottomButton, style.bottomText, style.bottomSelectButton, style.bottomSelectText, "Anonymous Only")).onTouch = function()
+            container:remove()
+            workspace:draw(true)
+            workspace:stop()
+            isFill = false
+        end
+        while isFill == -2 do --repeat until user presses button. TEST: Not tested yet
+            --os.sleep() --may require restart if os.sleep()
+        end
+
+        if isFill == false and config.anonymousReport then
             local ev, e = compat.internet.request(mainPage .. "anonymousReport",{["moduleId"] = (modID ~= 0 and modID or nil),["description"] = tostring(er)},{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36",["Content-Type"]="application/json"})
             if ev then
                 ev = JSON.decode(ev)

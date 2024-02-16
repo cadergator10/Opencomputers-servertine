@@ -180,7 +180,8 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
             install = true
         else
             print("New version for the Servertine Database is available!") --let them choose whether to install
-            print(tostring(config.version) .. " -> " .. tostring(version))
+            if version ~= config.version then print(tostring(config.version) .. " -> " .. tostring(version)) end
+            if bootver ~= config.bootver then print(tostring(config.bootver) .. " -> " .. tostring(bootver)) end
             print("Would you like to install this version? yes or no\nSome modules may require the new version")
             local text = term.read():sub(1,-2)
             while text ~= "yes" and text ~= "no" do
