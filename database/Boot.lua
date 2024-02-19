@@ -125,7 +125,7 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                     compat.fs.makeDirectory(aRD .. value)
                 end
                 --doing boot stuff first
-                if(bootver ~= config.bootver) then
+                if(bootver ~= config.bootver) then --TODO: Fix version checker if broken & make sure it doesnt use openOSReq when downloading the files
                     --[[if not (compat.isMine) then
                         for key,value in pairs(openOSReq) do --install
                             print("Installing " .. key)
@@ -133,17 +133,17 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                             --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
                         end
                     end]] --commented since clearly mineos
-                    --[[if compat.fs.isDirectory(aRD .. "Boot") then
+                    if compat.fs.isDirectory(aRD .. "Boot") then
                         compat.fs.remove(aRD .. "Boot")
                     end
                     compat.fs.makeDirectory(aRD .. "Boot")
                     for _, value in pairs(tempTable.boot) do
-                        if value.type == "boot" then
+                        if value.type == "boot" and value.noMine == false then
                             container.label.text = "Installing boot file to " .. value.path .. " file from URL: " .. value.url
                             workspace:draw(true)
-                            compat.internet.download(value.url,aRD .. "Boot/" .. value.path)
+                            compat.internet.download(value.url,string.sub(value.path,1,1) == "~" and aRD .. string.sub(value.path,2,-1) or value.path)
                         end --Shouldn't need itself overwritten since not OpenOS.
-                    end]]  --WHAT AM I THINKING?!? MINEOS HAS ALL BOOT FILES (apart from error checking) TODO: fix the website so it can determine what is only OpenOS and what is for both
+                    end  --WHAT AM I THINKING?!? MINEOS HAS ALL BOOT FILES (apart from error checking) TODO: fix the website so it can determine what is only OpenOS and what is for both
                 end
                 --other stuff
                 if(version ~= config.version) then
@@ -218,11 +218,11 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                 end
                 --doing boot stuff first
                 if(bootver ~= config.bootver) then
-                    for key,value in pairs(openOSReq) do --install
+                    --[[for key,value in pairs(openOSReq) do --install
                         print("Installing " .. key)
                         compat.internet.download(value,"/lib/" .. key)
                         --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
-                    end
+                    end]] --commented out to see if fix
                     if compat.fs.isDirectory(aRD .. "Boot") then
                         compat.fs.remove(aRD .. "Boot")
                     end
@@ -231,7 +231,7 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                     for _, value in pairs(tempTable.boot) do
                         if value.type == "boot" then
                             print("Installing boot file to " .. value.path .. " file from URL: " .. value.url)
-                            compat.internet.download(value.url,aRD .. "Boot/" .. value.path)
+                            compat.internet.download(value.url,string.sub(value.path,1,1) == "~" and aRD .. string.sub(value.path,2,-1) or value.path) --Make sure that a "~" allows it to use the local folder rather than global
                         elseif value.type == "bootmain" then
                             mainF = value
                         end
@@ -318,7 +318,7 @@ if result then --file exists
         local worked, errored = compat.internet.request(download .. "version",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
         if worked then --If got info from website
             local tempTable = JSON.decode(worked)
-            if tempTable.success == true and tempTable.version ~= config.version then --success checking version and version is not the same as one on web (bad version or update to system)
+            if tempTable.success == true and (tempTable.version ~= config.version or tempTable.bootver ~= config.bootver) then --success checking version and version is not the same as one on web (bad version or update to system)
                 local goodToRun = installer(tempTable.version, tempTable.bootver) --run installer
                 if goodToRun then --run program
                     local success, result = pcall(dofile,result)
