@@ -1,6 +1,7 @@
 local module = {}
 local compat, config
 
+compat = require("Compat")
 local GUI = require("GUI")
 local JSON = require("JSON")
 local ser = require("serialization")
@@ -8,8 +9,7 @@ local mainPage = "https://cadespc.com/servertine/modules/"
 
 local aRD = compat.isMine and compat.fs.path(compat.system.getCurrentScript()) or "" --path of program
 
-function module.setup(compated, configs)
-    compat = compated
+function module.setup(configs)
     config = configs
 end
 
@@ -69,23 +69,23 @@ function module.erHandle(er) --Was used to print out errors, but moving to PCall
         elseif isFill == true then
             local dataStuff = {}
 
-            if ~pcall(function() --A whole TON of stuff just to do with uploading extra information.
+            if not (pcall(function() --A whole TON of stuff just to do with uploading extra information.
                 dataStuff[0] = "BOOT CONFIG: " .. ser.serialize(config)
-            end)
+            end))
             then
                 -- errored, so write ERROR
                 dataStuff[0] = "BOOT CONFIG: ERROR: Unable to serialize boot config to string"
             end
-            if ~pcall(function()
+            if not (pcall(function()
                 dataStuff[1] = "DATABASE SETTINGS: " .. ser.serialize(compat.loadTable(aRD .. "dbsettings.txt"))
-            end)
+            end))
             then
                 -- errored, so write ERROR
                 dataStuff[1] = "DATABASE SETTINGS: ERROR: Unable to serialize database settings to string"
             end
-            if ~pcall(function()
+            if not (pcall(function()
                 dataStuff[2] = "MODULE SETTINGS: " .. ser.serialize(compat.loadTable(aRD .. "userlist.txt"))
-            end)
+            end))
             then
                 -- errored, so write ERROR
                 dataStuff[2] = "MODULE SETTINGS: ERROR: Unable to serialize module settings to string"
@@ -99,7 +99,7 @@ function module.erHandle(er) --Was used to print out errors, but moving to PCall
             end
             if(er.extraFiles ~= nil and type(er.extraFiles) == "table") then
                 for key, value in pairs(er.extraInfo) do
-                    if ~pcall(function()
+                    if not pcall(function()
                         dataStuff[nextNum] = key .. ": " .. ser.serialize(compat.loadTable(aRD .. "userlist.txt"))
                     end)
                     then
@@ -126,3 +126,5 @@ function module.erHandle(er) --Was used to print out errors, but moving to PCall
     end
     error("Something went wrong:\n" .. tostring(er) .. "\nError reporting will be available in the future")
 end
+
+return module

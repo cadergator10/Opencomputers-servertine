@@ -133,10 +133,10 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                             --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
                         end
                     end]] --commented since clearly mineos
-                    if compat.fs.isDirectory(aRD .. "Boot") then
-                        compat.fs.remove(aRD .. "Boot")
+                    if compat.fs.isDirectory(aRD .. "BootFiles") then
+                        compat.fs.remove(aRD .. "BootFiles")
                     end
-                    compat.fs.makeDirectory(aRD .. "Boot")
+                    compat.fs.makeDirectory(aRD .. "BootFiles")
                     for _, value in pairs(tempTable.boot) do
                         if value.type == "boot" and value.noMine == false then
                             container.label.text = "Installing boot file to " .. value.path .. " file from URL: " .. value.url
@@ -159,6 +159,7 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                 container:remove()
                 workspace:draw(true)
                 config.version = tempTable.version
+                config.bootver = tempTable.bootver
                 compat.saveTable(config,aRD .. "bootconfig.txt") --update version for version checker
                 loc = compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/") --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
             else
@@ -223,10 +224,10 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                         compat.internet.download(value,"/lib/" .. key)
                         --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
                     end]] --commented out to see if fix
-                    if compat.fs.isDirectory(aRD .. "Boot") then
-                        compat.fs.remove(aRD .. "Boot")
+                    if compat.fs.isDirectory(aRD .. "BootFiles") then
+                        compat.fs.remove(aRD .. "BootFiles")
                     end
-                    compat.fs.makeDirectory(aRD .. "Boot")
+                    compat.fs.makeDirectory(aRD .. "BootFiles")
                     local mainF = null
                     for _, value in pairs(tempTable.boot) do
                         if value.type == "boot" then
@@ -249,6 +250,7 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                     end
                 end
                 config.version = tempTable.version --change version for version checker
+                config.bootver = tempTable.bootver
                 local goodBoot = bootver ~= config.bootver
                 config.bootver = tempTable.bootver
                 compat.saveTable(config,aRD .. "bootconfig.txt")
@@ -307,7 +309,8 @@ elseif arg == "--delcompat" then
     os.execute("shutdown")
 end
 
-errHan = require("Boot/errorhandler")
+errHan = require("BootFiles/errorhandler")
+errHan.setup(config)
 
 compat.lang = config.lang --set compat lang file to whatever is in bootconfig (for OpenOS, since no localization stuff works with it.)
 local status, loc = pcall(compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/")) --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
