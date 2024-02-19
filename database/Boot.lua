@@ -133,17 +133,17 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                             --os.execute("wget -f " .. value .. " /lib/" .. key) --(getting rid of wget execute in favor of actual compat downloader)
                         end
                     end]] --commented since clearly mineos
-                    if compat.fs.isDirectory(aRD .. "Boot") then
+                    --[[if compat.fs.isDirectory(aRD .. "Boot") then
                         compat.fs.remove(aRD .. "Boot")
                     end
                     compat.fs.makeDirectory(aRD .. "Boot")
-                    for _, value in pairs(tempTable.files) do
+                    for _, value in pairs(tempTable.boot) do
                         if value.type == "boot" then
                             container.label.text = "Installing boot file to " .. value.path .. " file from URL: " .. value.url
                             workspace:draw(true)
                             compat.internet.download(value.url,aRD .. "Boot/" .. value.path)
                         end --Shouldn't need itself overwritten since not OpenOS.
-                    end
+                    end]]  --WHAT AM I THINKING?!? MINEOS HAS ALL BOOT FILES (apart from error checking) TODO: fix the website so it can determine what is only OpenOS and what is for both
                 end
                 --other stuff
                 if(version ~= config.version) then
@@ -228,7 +228,7 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                     end
                     compat.fs.makeDirectory(aRD .. "Boot")
                     local mainF = null
-                    for _, value in pairs(tempTable.files) do
+                    for _, value in pairs(tempTable.boot) do
                         if value.type == "boot" then
                             print("Installing boot file to " .. value.path .. " file from URL: " .. value.url)
                             compat.internet.download(value.url,aRD .. "Boot/" .. value.path)
