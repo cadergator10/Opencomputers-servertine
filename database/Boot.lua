@@ -159,7 +159,7 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                 container:remove()
                 workspace:draw(true)
                 config.version = tempTable.version
-                config.bootver = tempTable.bootver
+                config.bootver = tempTable.bootVer
                 compat.saveTable(config,aRD .. "bootconfig.txt") --update version for version checker
                 loc = compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/") --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
             else
@@ -250,9 +250,8 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                     end
                 end
                 config.version = tempTable.version --change version for version checker
-                config.bootver = tempTable.bootver
                 local goodBoot = bootver ~= config.bootver
-                config.bootver = tempTable.bootver
+                config.bootver = tempTable.bootVer
                 compat.saveTable(config,aRD .. "bootconfig.txt")
                 if(goodBoot) then
                     print("Please restart computer to run new boot")
