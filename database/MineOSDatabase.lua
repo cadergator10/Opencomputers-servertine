@@ -746,6 +746,10 @@ local function modulePress()
   runModule(selected.module)
 end
 
+local function TripErrorHandler(extraInfoTable, fileTable) --Module specific error handling to pass more data to the Website & Stuff
+  error({["extraInfo"] = extraInfoTable, ["extraFiles"] = fileTable})
+end
+
 ----------Setup GUI
 settingTable = compat.loadTable(aRD .. "dbsettings.txt")
 if settingTable == nil then
@@ -836,7 +840,7 @@ local function finishSetup()
     end
   end, ["checkConfig"] = function(cfg) --So users can check settings added to the dev settings module
     return settingTable[cfg]
-  end}
+  end, ["error"] = TripErrorHandler}
 
   window:addChild(GUI.panel(1,11,12,window.height - 11,style.listPanel))
   modulesLayout = window:addChild(GUI.list(2,12,10,window.height - 13,3,0,style.listBackground, style.listText, style.listAltBack, style.listAltText, style.listSelectedBack, style.listSelectedText, false))
