@@ -310,6 +310,10 @@ end
 
 errHan = require("BootFiles/errorhandler")
 local notif = require("BootFiles/notification")
+if config.getNotif == nil then
+    config.getNotif = true
+    compat.saveTable(config,aRD .. "bootconfig.txt")
+end
 errHan.setup(config)
 notif.setup(config)
 
@@ -334,6 +338,7 @@ if result then --file exists
                     clearScreen()
                 end
             else
+                notif.getNotifications() --popup alerts
                 local success, result = pcall(dofile,result)
                 if not success then
                     errHan.erHandle(result)
@@ -343,6 +348,7 @@ if result then --file exists
             end
         else --failed to connect to web: run database anyway
             GUI.alert("Error getting version from website")
+            notif.getNotifications() --popup alerts
             local success, result = pcall(dofile,result)
             if not success then
                 errHan.erHandle(result)
@@ -351,6 +357,7 @@ if result then --file exists
             clearScreen()
         end
     else --no version checking: only run program
+        notif.getNotifications() --popup alerts
         local success, result = pcall(dofile,result)
         if not success then
             errHan.erHandle(result)
@@ -364,6 +371,7 @@ else --try running installer since db file doesn't exist
         result, reason = loadfile(compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua")
         if result then --is loaded, so now can run
             result = compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua"
+            notif.getNotifications() --popup alerts
             local success, result = pcall(dofile,result)
             if not success then
                 errHan.erHandle(result)
