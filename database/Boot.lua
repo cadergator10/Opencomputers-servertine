@@ -181,8 +181,8 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
             install = true
         else
             print("New version for the Servertine Database is available!") --let them choose whether to install
-            if version ~= config.version then print(tostring(config.version) .. " -> " .. tostring(version)) end
-            if bootver ~= config.bootver then print(tostring(config.bootver) .. " -> " .. tostring(bootver)) end
+            if version ~= config.version then print("Database:   " .. tostring(config.version) .. " -> " .. tostring(version)) end
+            if bootver ~= config.bootver then print("Boot Files: " .. tostring(config.bootver) .. " -> " .. tostring(bootver)) end
             print("Would you like to install this version? yes or no\nSome modules may require the new version")
             local text = term.read():sub(1,-2)
             while text ~= "yes" and text ~= "no" do
@@ -253,7 +253,7 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
                 local goodBoot = bootver ~= config.bootver
                 config.bootver = tempTable.bootVer
                 compat.saveTable(config,aRD .. "bootconfig.txt")
-                if(goodBoot) then
+                if(goodBoot or arg == "--install") then --make sure computer restarts on boot.
                     print("Please restart computer to run new boot")
                     os.sleep(2)
                     os.execute("shutdown")
@@ -309,7 +309,9 @@ elseif arg == "--delcompat" then
 end
 
 errHan = require("BootFiles/errorhandler")
+local notif = require("BootFiles/notification")
 errHan.setup(config)
+notif.setup(config)
 
 compat.lang = config.lang --set compat lang file to whatever is in bootconfig (for OpenOS, since no localization stuff works with it.)
 local status, loc = pcall(compat.system.getLocalization(compat.fs.path(compat.system.getCurrentScript()) .. "Localizations/")) --Retrieve localizations in boot loader so 1. available in boot file, and 2. Enabled by default.
@@ -323,6 +325,7 @@ if result then --file exists
             if tempTable.success == true and (tempTable.version ~= config.version or tempTable.bootver ~= config.bootver) then --success checking version and version is not the same as one on web (bad version or update to system)
                 local goodToRun = installer(tempTable.version, tempTable.bootver) --run installer
                 if goodToRun then --run program
+                    notif.getNotifications() --popup alerts
                     local success, result = pcall(dofile,result)
                     if not success then
                         errHan.erHandle(result)
