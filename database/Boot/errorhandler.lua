@@ -50,6 +50,8 @@ function module.erHandle(er) --Was used to print out errors, but moving to PCall
             workspace:stop()
             isFill = false
         end
+        workspace:draw(true)
+        workspace:start()
         while isFill == -2 do --repeat until user presses button. TEST: Not tested yet
             --os.sleep() --may require restart if os.sleep()
         end
@@ -68,45 +70,41 @@ function module.erHandle(er) --Was used to print out errors, but moving to PCall
             end
         elseif isFill == true then
             local dataStuff = {}
-
             if not (pcall(function() --A whole TON of stuff just to do with uploading extra information.
-                dataStuff[0] = "BOOT CONFIG: " .. ser.serialize(config)
+                table.insert(dataStuff, "BOOT CONFIG: " .. ser.serialize(config))
             end))
             then
                 -- errored, so write ERROR
-                dataStuff[0] = "BOOT CONFIG: ERROR: Unable to serialize boot config to string"
+                table.insert(dataStuff,"BOOT CONFIG: ERROR: Unable to serialize boot config to string")
             end
             if not (pcall(function()
-                dataStuff[1] = "DATABASE SETTINGS: " .. ser.serialize(compat.loadTable(aRD .. "dbsettings.txt"))
+                table.insert(dataStuff,"DATABASE SETTINGS: " .. ser.serialize(compat.loadTable(aRD .. "dbsettings.txt")))
             end))
             then
                 -- errored, so write ERROR
-                dataStuff[1] = "DATABASE SETTINGS: ERROR: Unable to serialize database settings to string"
+                table.insert(dataStuff,"DATABASE SETTINGS: ERROR: Unable to serialize database settings to string")
             end
             if not (pcall(function()
-                dataStuff[2] = "MODULE SETTINGS: " .. ser.serialize(compat.loadTable(aRD .. "userlist.txt"))
+                table.insert(dataStuff,"MODULE SETTINGS: " .. ser.serialize(compat.loadTable(aRD .. "userlist.txt")))
             end))
             then
                 -- errored, so write ERROR
-                dataStuff[2] = "MODULE SETTINGS: ERROR: Unable to serialize module settings to string"
+                table.insert(dataStuff,"MODULE SETTINGS: ERROR: Unable to serialize module settings to string")
             end
-            local nextNum = 3
             if(er.extraInfo ~= nil and type(er.extraInfo) == "table") then
                 for _, value in pairs(er.extraInfo) do
-                    dataStuff[nextNum] = value
-                    nextNum = nextNum + 1
+                    table.insert(dataStuff,value)
                 end
             end
             if(er.extraFiles ~= nil and type(er.extraFiles) == "table") then
                 for key, value in pairs(er.extraInfo) do
                     if not pcall(function()
-                        dataStuff[nextNum] = key .. ": " .. ser.serialize(compat.loadTable(aRD .. "userlist.txt"))
+                        table.insert(dataStuff,key .. ": " .. ser.serialize(compat.loadTable(aRD .. "userlist.txt")))
                     end)
                     then
                         -- errored, so write ERROR
-                        dataStuff[nextNum] = key .. ": ERROR: Unable to serialize" .. value .. " to string"
+                        table.insert(dataStuff,key .. ": ERROR: Unable to serialize" .. value .. " to string")
                     end
-                    nextNum = nextNum + 1
                 end
             end
 
