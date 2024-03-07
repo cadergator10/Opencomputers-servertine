@@ -14,7 +14,7 @@ local thread = require("thread")
 local keyboard = require("keyboard")
 local uuid = require("uuid")
 
-local version = "4.0.2"
+local version = "4.0.3"
 
 local serverModules = "https://raw.githubusercontent.com/cadergator10/opencomputer-security-system/main/src/server/modules/modules.txt"
 
@@ -384,6 +384,16 @@ end,["print"]=function(msg) --print to screen using history
   end
 end,["configCheck"]=function(cfg) --Check module specific settings
   return settingTable.dbSettings[cfg]
+end,["advsend"]=function(address,link,port,data,data2)
+  if link and address then
+    modem.send(link,port == nil and modemPort or port,"rebroadcast",ser.serialize({["uuid"]=add,["data"]=data,["data2"]=data2})) --issue
+  else
+    if address then
+      modem.send(address,port == nil and modemPort or port,data,data2)
+    else
+      modem.broadcast(port == nil and modemPort or port,data,data2)
+    end
+  end
 end}
 
 for _,value in pairs(modules) do

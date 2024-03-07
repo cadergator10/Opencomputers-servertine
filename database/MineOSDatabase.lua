@@ -28,7 +28,7 @@ local configBuffer = {} --All module's config options in database
 ----------
 
 local prgName = loc.name
-local version = "v4.0.2"
+local version = "v4.0.3"
 
 local online = true
 local extraOff = false
