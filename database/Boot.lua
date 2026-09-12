@@ -7,6 +7,7 @@ if not status then --auto assume system is OpenOS because MineOS should autoinst
 end
 local mainPage = "https://cadespc.com/servertine/modules/"
 local download = mainPage .. "getservertine" --URL used by boot for servertine stuff
+local offlineRequest = {["success"]:true,["bootVer"]:1,["version"]:3,["folders"]:"Styles,Localizations",["files"]:[{["id"]:2,["type"]:"db",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/main/database/MineOSDatabase.lua",["path"]:"Database.lua"},{["id"]:3,["type"]:"db",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/main/database/Styles/olddark.lua",["path"]:"Styles/olddark.lua"},{["id"]:4,["type"]:"db",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/main/database/Styles/dark.lua",["path"]:"Styles/dark.lua"},{["id"]:5,["type"]:"db",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/main/database/Styles/default.lua",["path"]:"Styles/default.lua"},{["id"]:6,["type"]:"db",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/main/database/Localizations/English.lang",["path"]:"Localizations/English.lang"},{["id"]:7,["type"]:"db",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/main/database/Localizations/Russian.lang",["path"]:"Localizations/Russian.lang"},{["id"]:9,["type"]:"server",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/main/server/server.lua",["path"]:"server.lua"},{["id"]:12,["type"]:"db",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/main/database/Styles/standardRainbow.lua",["path"]:"Styles/rainbow.lua"}],"boot":[{["id"]:13,["type"]:"boot",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/4.0.3/database/Boot.lua",["path"]:"boot.lua",["noMine"]:true},{["id"]:14,["type"]:"boot",["url"]:"https://github.com/IgorTimofeev/Image/raw/master/OCIF.lua",["path"]:"/lib/FormatModules/OCIF.lua",["noMine"]:true},{["id"]:16,["type"]:"boot",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-serpentine/main/database/Compat.lua",["path"]:"/lib/Compat.lua",["noMine"]:true},{["id"]:17,["type"]:"boot",["url"]:"https://github.com/IgorTimofeev/MineOS/raw/master/Libraries/JSON.lua",["path"]:"/lib/JSON.lua",["noMine"]:true},{["id"]:18,["type"]:"boot",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-serpentine/main/database/GUI.lua",["path"]:"/lib/GUI.lua",["noMine"]:true},{["id"]:19,["type"]:"boot",["url"]:"https://github.com/IgorTimofeev/AdvancedLua/raw/master/AdvancedLua.lua",["path"]:"/lib/advancedLua.lua",["noMine"]:true},{["id"]:20,["type"]:"boot",["url"]:"https://github.com/IgorTimofeev/Color/raw/master/Color.lua",["path"]:"/lib/color.lua",["noMine"]:true},{["id"]:21,["type"]:"boot",["url"]:"https://github.com/IgorTimofeev/DoubleBuffering/raw/master/DoubleBuffering.lua",["path"]:"/lib/doubleBuffering.lua",["noMine"]:true},{["id"]:22,["type"]:"boot",["url"]:"https://github.com/IgorTimofeev/Image/raw/master/Image.lua",["path"]:"/lib/image.lua",["noMine"]:true},{["id"]:23,["type"]:"boot",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/4.0.3/database/Boot/errorhandler.lua",["path"]:"~/BootFiles/errorhandler.lua",["noMine"]:false},{["id"]:24,["type"]:"boot",["url"]:"\thttps://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/4.0.3/database/Boot/notification.lua",["path"]:"~/BootFiles/notification.lua",["noMine"]:false},{["id"]:26,["type"]:"bootmain",["url"]:"https://raw.githubusercontent.com/cadergator10/Opencomputers-servertine/main/database/Boot.lua",["path"]:"boot.lua"}]}
 local aRD = compat.isMine and compat.fs.path(compat.system.getCurrentScript()) or "" --path of program
 local config = compat.loadTable(aRD .. "bootconfig.txt") --boot configuration
 local term = not compat.isMine and require("term") or nil --nil if MineOS, is term API if OpenOS
@@ -109,9 +110,12 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
             --os.sleep() --may require restart if os.sleep()
         end
         if install then
-            local worked, errored = compat.internet.request(download .. "files",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"}) --get file urls from server
+            --local worked, errored = compat.internet.request(download .. "files",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"}) --get file urls from server
+            local worked = true
+            local errored = false
             if worked then --if successful request
-                local tempTable = JSON.decode(worked) --decode JSON to table
+                --local tempTable = JSON.decode(worked) --decode JSON to table
+                local tempTable = offlineRequest
                 local aRD = compat.fs.path(compat.system.getCurrentScript()) --get file location
                 local workspace = GUI.workspace()
                 --main stuff
@@ -205,9 +209,11 @@ local function installer(version, bootver) --asks user input and stuff, plus ins
             end
         end
         if install then
-            local worked, errored = compat.internet.request(download .. "files",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+            --local worked, errored = compat.internet.request(download .. "files",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+            local worked = true
             if worked then
-                local tempTable = JSON.decode(worked) --TODO: Make sure this matches json sent by the server
+                --local tempTable = JSON.decode(worked) --TODO: Make sure this matches json sent by the server
+                local tempTable = offlineRequest
                 local aRD = compat.fs.path(compat.system.getCurrentScript())
 
                 local folders = split(tempTable.folders,",") --prep folders?
@@ -324,8 +330,10 @@ if result then --file exists
     result = compat.fs.path(compat.system.getCurrentScript()) .. "/Database.lua" --set path for dofile()
     if config.checkVersion then --If version checking is enabled
         local worked, errored = compat.internet.request(download .. "version",nil,{["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.119 Safari/537.36"})
+        local worked = true
         if worked then --If got info from website
-            local tempTable = JSON.decode(worked)
+            --local tempTable = JSON.decode(worked)
+            local tempTable = {["success"]:true,["version"]:4,["bootver"]:2}
             if tempTable.success == true and (tempTable.version ~= config.version or tempTable.bootver ~= config.bootver) then --success checking version and version is not the same as one on web (bad version or update to system)
                 local goodToRun = installer(tempTable.version, tempTable.bootver) --run installer
                 if goodToRun then --run program
