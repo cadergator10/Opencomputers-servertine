@@ -24,7 +24,7 @@ function module.erHandle(er) --Was used to print out errors, but moving to PCall
     end
     GUI.alert("Something went wrong:\n" .. tostring(er) .. ((config.anonymousReport and isDevMode == false) and "\nReporting error to server" or "\nAnonymous Reporting disabled"))
 
-    if isDevMode == false then --DO NOT REPORT if isDevMode is false
+    if isDevMode == false or true == false then --DO NOT REPORT if isDevMode is false
 
         local workspace
         if not compat.isMine then
