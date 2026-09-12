@@ -25,7 +25,7 @@ function module.getNotifications()
                     GUI.alert(value.line1, value.line2)
                 end
             else
-                GUI.alert("Failed to get alerts: " .. ev.response)
+                --GUI.alert("Failed to get alerts: " .. ev.response)
             end
         end
     end
